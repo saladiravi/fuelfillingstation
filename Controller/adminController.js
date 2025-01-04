@@ -1,5 +1,6 @@
 const pool = require('../db/db');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
+
 
 exports.adminLogin = async (req, res) => {
     const { email, password } = req.body;
