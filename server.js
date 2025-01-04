@@ -9,6 +9,6 @@ app.use(express.json())
 app.use('/employee',employeeRoutes);
 app.use('/attendence',attendenceRoutes);
 app.use('/admin',adminRoutes);
-app.listen(5000, () => {
+app.listen(5432, () => {
     console.log("Server is running on port 5000")
 })
