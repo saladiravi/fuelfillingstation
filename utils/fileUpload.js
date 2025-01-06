@@ -13,14 +13,15 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({
-    storage: storage,
-    fileFilter: (req, file, cb) => {
-      const allowedFields = ['profileImage', 'aadharImage'];
-      if (!allowedFields.includes(file.fieldname)) {
-        return cb(new multer.MulterError('LIMIT_UNEXPECTED_FILE'));
-      }
-      cb(null, true);
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    const allowedFields = ['aadhar_Image', 'profile_image']; // Match the field names in routes
+    if (!allowedFields.includes(file.fieldname)) {
+      return cb(new multer.MulterError('LIMIT_UNEXPECTED_FILE'));
     }
-  });
+    cb(null, true);
+  }
+});
+
   
 module.exports = upload;
