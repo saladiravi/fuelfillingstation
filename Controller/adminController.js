@@ -22,7 +22,7 @@ exports.adminLogin = async (req, res) => {
         }
 
         
-        res.status(200).json({ message: 'Login successful', admin: { id: admin.adminid, email: admin.email } });
+        res.status(200).json({ statusCode: 200,message: 'Login successful', admin: { id: admin.adminid, email: admin.email } });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });

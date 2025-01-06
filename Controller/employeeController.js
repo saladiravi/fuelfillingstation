@@ -21,7 +21,11 @@ exports.createEmployee = async (req, res) => {
       [employeeName, phoneNumber, mobileNumber, aadharno, aadharImage, profileImage, address]
     );
 
-    res.json(emp.rows[0]);
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Employee created successfully',
+      employee: emp.rows[0], 
+    });
   } catch (err) {
     console.error('Error inserting employee:', err.message);
     res.status(500).json({ error: 'Failed to insert employee' });
@@ -31,7 +35,11 @@ exports.createEmployee = async (req, res) => {
 exports.getallEmployees=async (req,res)=>{
 try{
   const allemp=await pool.query("SELECT * FROM employees");
-  res.json(allemp.rows);
+  res.status(200).json({
+    statusCode: 200,
+    message: 'Employees fetched successfully',
+    employees: allemp.rows,  
+  });
 }catch(err){
     console.log(err);
     res.status(500).json({error:'failed'})
@@ -53,8 +61,11 @@ exports.getEmployeeById = async (req, res) => {
       return res.status(404).json({ error: "Employee not found" });
     }
 
-     
-    res.json(empById.rows[0]);
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Employee fetched successfully',
+      employee: empById.rows[0],  
+    });
   } catch (err) {
     console.error("Error fetching employee by ID:", err);
     res.status(500).json({ error: "fail" });
