@@ -1,4 +1,5 @@
 const pool = require('../db/db');
+const path = require('path');
 
 exports.createEmployee = async (req, res) => {
   try {
