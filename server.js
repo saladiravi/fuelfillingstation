@@ -5,6 +5,7 @@ const employeeRoutes=require('./routes/Employeeroutes');
 const attendenceRoutes=require('./routes/attendenceroutes');
 const adminRoutes=require('./routes/adminroutes');
 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.json())
 app.use(cors());
 app.use('/employee',employeeRoutes);
