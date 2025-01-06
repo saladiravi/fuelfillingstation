@@ -13,9 +13,13 @@ exports.createEmployee = async (req, res) => {
       statusname,
     } = req.body;
 
-    const profileImage = req.files?.profile_image?.[0]?.path.replace(/\\/g, '/') || null;
-    const aadharImage = req.files?.aadhar_Image?.[0]?.path.replace(/\\/g, '/') || null;
-
+    const profileImage = req.files?.profile_image?.[0]?.path
+    ? path.resolve(req.files.profile_image[0].path).replace(/\\/g, '/')
+    : null;
+  const aadharImage = req.files?.aadhar_Image?.[0]?.path
+    ? path.resolve(req.files.aadhar_Image[0].path).replace(/\\/g, '/')
+    : null;
+  
     const emp = await pool.query(
       `INSERT INTO employees(
         "employeeName", "phoneNumber", "mobileNumber", "aadharno", 
