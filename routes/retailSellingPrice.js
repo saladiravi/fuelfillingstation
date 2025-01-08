@@ -4,8 +4,8 @@ const router=express.Router();
 
 router.post('/addsellingPrice',RSP.addsellingprice);
 router.get('/getAllPrices',RSP.getallprices);
-router.post('/getpriceBydate',RSP.getpricebydate);
-router.put('/getPriceByid',RSP.getpricesbyid);
+router.get('/getpriceBydate',RSP.getpricebydate);
+router.get('/getPriceByid',RSP.getpricesbyid);
 router.put('/getUpdatePrice',RSP.updatePrice);
 
 module.exports=router

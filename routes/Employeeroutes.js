@@ -13,7 +13,7 @@ router.post(
 );
 
 router.get('/getEmployees',employeeController.getallEmployees);
-router.put("/employeebyid",employeeController.getEmployeeById);
+router.get("/employeebyid",employeeController.getEmployeeById);
 router.put(
     '/employeeid',
     upload.fields([

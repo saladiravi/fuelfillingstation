@@ -4,7 +4,6 @@ exports.addsellingprice = async (req, res) => {
     try {
         const { date, ms, psd, speed } = req.body;
 
-        // Check if the record already exists
         const existingPrice = await pool.query(
             `SELECT * FROM retailsellingprice WHERE "date" = $1`,
             [date]
@@ -14,11 +13,11 @@ exports.addsellingprice = async (req, res) => {
             return res.status(400).json({
                 statusCode: 400,
                 message: 'Price for the given date already exists',
-                existingPrice: existingPrice.rows[0], // Optionally return the existing record
+                existingPrice: existingPrice.rows[0],
             });
         }
 
-        // Insert new price
+
         const sellingprice = await pool.query(
             `INSERT INTO retailsellingprice("date", "ms", "psd", "speed") 
              VALUES ($1, $2, $3, $4) 
@@ -70,28 +69,28 @@ exports.getpricesbyid = async (req, res) => {
         res.status(500).json({ error: 'failed to fetched price' })
     }
 
-
-    exports.getpricebydate = async (req, res) => {
-        try {
-            const [date] = req.body
-            const pricedate = await pool.query(
-                "SELECT * FROM retailsellingprice WHERE date=$1",
-                [date]
-            )
-            if (pricedate.rows.length === 0) {
-                return res.status(404).json({ error: "Date not found" })
-            }
-            res.status(200).json({
-                statusCode: 200,
-                message: "price fetched Sucessully",
-                price: pricedate.rows[0]
-            })
-        } catch (err) {
-            res.status(500).json({ error: 'failed to fetched price ' })
-        }
-    }
-
 }
+exports.getpricebydate = async (req, res) => {
+    try {
+        const [date] = req.body
+        const pricedate = await pool.query(
+            "SELECT * FROM retailsellingprice WHERE date=$1",
+            [date]
+        )
+        if (pricedate.rows.length === 0) {
+            return res.status(404).json({ error: "Date not found" })
+        }
+        res.status(200).json({
+            statusCode: 200,
+            message: "price fetched Sucessully",
+            price: pricedate.rows[0]
+        })
+    } catch (err) {
+        res.status(500).json({ error: 'failed to fetched price ' })
+    }
+}
+
+
 
 exports.updatePrice = async (req, res) => {
     try {
