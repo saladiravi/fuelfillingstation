@@ -12,9 +12,9 @@ router.post(
   employeeController.createEmployee
 );
 
-  router.get('/getEmployees',employeeController.getallEmployees);
-  router.put("/employeebyid",employeeController.getEmployeeById);
-  router.put(
+router.get('/getEmployees',employeeController.getallEmployees);
+router.put("/employeebyid",employeeController.getEmployeeById);
+router.put(
     '/employeeid',
     upload.fields([
       { name: 'aadhar_Image', maxCount: 1 },
@@ -23,4 +23,4 @@ router.post(
     employeeController.updateEmployee
   );
   
-  module.exports=router
+ module.exports=router
