@@ -60,7 +60,7 @@ try{
 exports.getEmployeeById = async (req, res) => {
   try {
      
-    const { employee_id } = req.query;  
+    const { employee_id } = req.body;  
 
     
     const empById = await pool.query(
