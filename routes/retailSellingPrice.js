@@ -8,3 +8,4 @@ router.post('./getpriceBydate',RSP.getpricebydate);
 router.put('./getPriceByid',RSP.getpricesbyid);
 router.put('./getUpdatePrice',RSP.updatePrice);
 
+module.exports=router
