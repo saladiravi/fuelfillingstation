@@ -84,7 +84,7 @@ exports.getpricesbyid = async (req, res) => {
             res.status(200).json({
                 statusCode: 200,
                 message: "price fetched Sucessully",
-                price: price.rows[0]
+                price: pricedate.rows[0]
             })
         } catch (err) {
             res.status(500).json({ error: 'failed to fetched price ' })
