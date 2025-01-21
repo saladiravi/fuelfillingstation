@@ -66,6 +66,7 @@ exports.addattendence = async (req, res) => {
     // console.log(pumpSalesResult.rows, "Pump Sales Inserted");
 
     res.json({
+      statusCode:200,
       attendance: attend.rows[0],
       pumpSales: pumpSalesResult.rows,
     });
@@ -81,11 +82,7 @@ exports.getAttendenceDetails = async (req, res) => {
   try {
     const query = `
       SELECT 
-        a.attendence_id,
-        a.operator_name,
-        a.date,
-        a.shift,
-        e."employeeName" AS operator_name,
+        a.*,
         p.bay_side,
         p.fuel_type,
         p.guns
@@ -100,15 +97,16 @@ exports.getAttendenceDetails = async (req, res) => {
     `;
 
     const attendenceDetails = await pool.query(query);
-
-    console.log('Attendance Details:', attendenceDetails.rows);
-    
-    res.json(attendenceDetails.rows);
+    res.json({
+      statusCode:200,
+      attendence:attendenceDetails.rows
+    });
   } catch (err) {
-    console.error('Error fetching attendance details:', err.message);
+     
     res.status(500).json({ error: 'Failed to fetch attendance details' });
   }
 };
+
 
 
   
@@ -140,7 +138,9 @@ exports.getAttendenceDetails = async (req, res) => {
       }
   
       // Return the attendance record
-      res.json(attendById.rows[0]);
+      res.json({
+        statusCode:200,
+        attendenceId:attendById.rows[0]});
     } catch (err) {
       console.error("Error fetching attendance by ID:", err);
       res.status(500).json({ error: "Failed to fetch attendance record" });
