@@ -1,56 +1,116 @@
 const pool = require('../db/db');
 
-exports.addattendence = async (req, res) => {
-    try {
-      const {
-         date,
-        operator_name,
-        operatorshift,
-        pumpNumber,
-        bay_side,
-        attendence,
-        remarks,
-   } = req.body;
-  
-     
-     const attend = await pool.query(
-        `INSERT INTO attendence(
-           "date", "operator_name", "operatorshift", "pumpNumber", 
-          "bay_side", "attendence","remarks"
-        ) VALUES($1, $2, $3, $4, $5, $6,$7) RETURNING *`,
-        [date,operator_name, operatorshift, pumpNumber, bay_side, attendence,remarks]
-      );
-    
-      res.json(attend.rows[0]);
-    } catch (err) {
-      console.error('Error inserting attendence:', err.message);
-      res.status(500).json({ error: 'Failed to insert attendence' });
-    }
-  };
+const format = require("pg-format");  
 
-  
-  exports.getAttendenceDetails = async (req, res) => {
-    try {
-      const query = `
-        SELECT 
-            a.*,
-            e."employeeName" AS operator_name
-        FROM 
-            attendence a
-        JOIN 
-            employees e 
-        ON
-            a.operator_name = e.employee_id
-      `;
-      
-      const attendenceDetails = await pool.query(query);
-      
-      res.json(attendenceDetails.rows);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Failed to fetch attendance details' });
+exports.addattendence = async (req, res) => {
+  try {
+    const {
+      date,
+      operator_name,
+      operatorshift,
+      pumpNumber,
+      bay_side,
+      attendence,
+      remarks,
+    } = req.body;
+
+    const attend = await pool.query(
+      `INSERT INTO attendence(
+          "date", "operator_name", "operatorshift", "pumpNumber",
+          "attendence", "remarks"
+      ) VALUES($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [date, operator_name, operatorshift, pumpNumber, attendence, remarks]
+    );
+     
+    // console.log(attend,'attend');
+
+    const attendenceId = attend.rows[0]?.attendence_id;
+    if (!attendenceId) {
+      throw new Error("Failed to insert attendance.");
     }
-  };
+
+    const defaultPumpSales = [];
+    for (const bay of bay_side || []) {
+      const { bay_name, guns } = bay;
+      for (const gunInfo of guns || []) {
+        const { gun, fuel_type } = gunInfo;
+        defaultPumpSales.push([
+          attendenceId,   
+          bay_name,       
+          gun,            
+          fuel_type,      
+          null,            
+          null,          
+          null,           
+          null,            
+          new Date(),       
+        ]);
+      }
+    }
+    
+
+    if (defaultPumpSales.length === 0) {
+      return res.status(400).json({ error: "No pump sales data to insert." });
+    }
+
+    const pumpSalesQuery = `
+    INSERT INTO pump_sales(
+      attendence_id, bay_side, 
+      guns, fuel_type, cmr, omr, res_id, amount, created_at
+    ) VALUES %L RETURNING *`;
+  const formattedQuery = format(pumpSalesQuery, defaultPumpSales);
+  
+    //  console.log(formattedQuery, "formattedquery");
+
+    const pumpSalesResult = await pool.query(formattedQuery);
+    // console.log(pumpSalesResult.rows, "Pump Sales Inserted");
+
+    res.json({
+      attendance: attend.rows[0],
+      pumpSales: pumpSalesResult.rows,
+    });
+  } catch (err) {
+    // console.error(err); // Log the error details for debugging
+    res.status(500).json({ error: err.message || "Failed to insert attendance and pump sales" });
+  }
+};
+
+
+
+exports.getAttendenceDetails = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        a.attendence_id,
+        a.operator_name,
+        a.date,
+        a.shift,
+        e."employeeName" AS operator_name,
+        p.bay_side,
+        p.fuel_type,
+        p.guns
+      FROM 
+        attendence a
+      INNER JOIN 
+        employees e 
+        ON a.operator_name = e.employee_id
+      INNER JOIN 
+        pump_sales p
+        ON a.attendence_id = p.attendence_id
+    `;
+
+    const attendenceDetails = await pool.query(query);
+
+    console.log('Attendance Details:', attendenceDetails.rows);
+    
+    res.json(attendenceDetails.rows);
+  } catch (err) {
+    console.error('Error fetching attendance details:', err.message);
+    res.status(500).json({ error: 'Failed to fetch attendance details' });
+  }
+};
+
+
   
   
   
