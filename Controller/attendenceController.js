@@ -87,6 +87,7 @@ exports.getAttendenceDetails = async (req, res) => {
           a."pumpNumber", -- Use quotes for case sensitivity
           a.remarks,
           e."employeeName" AS operator_name,
+          a.operatorshift,
           ARRAY_AGG(
             JSON_BUILD_OBJECT(
               'bay_side', p.bay_side
@@ -101,7 +102,7 @@ exports.getAttendenceDetails = async (req, res) => {
           pump_sales p
         ON a.attendence_id = p.attendence_id
         GROUP BY 
-          a.attendence_id, a.date, a."pumpNumber", a.remarks, e."employeeName";
+          a.attendence_id, a.date, a."pumpNumber", a.remarks, e."employeeName",a.operatorshift;
 
     `;
 
