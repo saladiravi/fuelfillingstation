@@ -22,7 +22,7 @@ exports.addattendence = async (req, res) => {
       [date, operator_name, operatorshift, pumpNumber, attendence, remarks]
     );
 
-    // console.log(attend,'attend');
+    
 
     const attendenceId = attend.rows[0]?.attendence_id;
     if (!attendenceId) {
@@ -141,13 +141,14 @@ exports.getAttendenceById = async (req, res) => {
       `;
 
     const attendById = await pool.query(query, [attendence_id]);
+    console.log('attendById',attendById);
 
-    // Check if attendance record is found
+    
     if (attendById.rows.length === 0) {
       return res.status(404).json({ error: "Attendance record not found" });
     }
 
-    // Return the attendance record
+    
     res.json({
       statusCode: 200,
       attendenceId: attendById.rows[0]
