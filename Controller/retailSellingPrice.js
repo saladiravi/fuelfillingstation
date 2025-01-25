@@ -1,12 +1,14 @@
 const pool = require('../db/db');
+const moment = require('moment');
 
 exports.addsellingprice = async (req, res) => {
     try {
-        const { date, ms, psd, speed } = req.body;
+        
+        const { ms, hsd, speed, created_at} = req.body;
 
         const existingPrice = await pool.query(
-            `SELECT * FROM retailsellingprice WHERE "date" = $1`,
-            [date]
+            `SELECT * FROM retailsellingprice WHERE "created_at" = $1`,
+            [created_at]
         );
 
         if (existingPrice.rows.length > 0) {
@@ -19,10 +21,10 @@ exports.addsellingprice = async (req, res) => {
 
 
         const sellingprice = await pool.query(
-            `INSERT INTO retailsellingprice("date", "ms", "psd", "speed") 
+            `INSERT INTO retailsellingprice("ms", "hsd", "speed","created_at") 
              VALUES ($1, $2, $3, $4) 
              RETURNING *`,
-            [date, ms, psd, speed]
+            [ ms, hsd, speed,created_at]
         );
 
         res.status(200).json({
@@ -31,7 +33,7 @@ exports.addsellingprice = async (req, res) => {
             sellingprices: sellingprice.rows[0],
         });
     } catch (err) {
-        console.error('Error adding selling price:', err.message);
+        console.error('Error add selling price:', err.message);
         res.status(500).json({ error: 'Failed to insert price' });
     }
 };
@@ -70,25 +72,44 @@ exports.getpricesbyid = async (req, res) => {
     }
 
 }
+
+
 exports.getpricebydate = async (req, res) => {
     try {
-        const [date] = req.body
-        const pricedate = await pool.query(
-            "SELECT * FROM retailsellingprice WHERE date=$1",
-            [date]
-        )
+        const { created_at } = req.body;
+
+       
+        const formattedDate = moment(created_at, "DD-MM-YYYY").format("YYYY-MM-DD");
+
+         const pricedate = await pool.query(
+            "SELECT * FROM retailsellingprice WHERE created_at = $1",
+            [formattedDate]
+        );
+
+         
         if (pricedate.rows.length === 0) {
-            return res.status(404).json({ error: "Date not found" })
+            return res.status(404).json({
+                statusCode: 404,
+                message: "No records found for the given date",
+            });
         }
+
+        
+        const formattedPrices = pricedate.rows.map(record => ({
+            ...record,
+            date: moment(record.created_at).format("DD-MM-YYYY"),  
+        }));
+
         res.status(200).json({
             statusCode: 200,
-            message: "price fetched Sucessully",
-            price: pricedate.rows[0]
-        })
+            message: "Prices fetched successfully",
+            prices: formattedPrices,
+        });
     } catch (err) {
-        res.status(500).json({ error: 'failed to fetched price ' })
+        console.error("Error fetching prices by date:", err.message);
+        res.status(500).json({ error: "Failed to fetch prices" });
     }
-}
+};
 
 
 
@@ -100,15 +121,15 @@ exports.updatePrice = async (req, res) => {
         const fields = [];
         const values = [];
         let index = 1
-        if (date) {
+        if (created_at) {
             fields.push(`"date"=$${index++}`);
-            values.push(date)
+            values.push(created_at)
         }
         if (ms) {
             fields.push(`"ms"=$${index++}`);
             values.push(ms)
         }
-        if (psd) {
+        if (hsd) {
             fields.push(`"psd"=$${index++}`);
             values.push(psd)
         }
