@@ -4,7 +4,7 @@ const moment = require('moment');
 exports.addsellingprice = async (req, res) => {
     try {
         
-        const { ms, hsd, speed, created_at} = req.body;
+        const { ms, hsd, speed, cng,created_at} = req.body;
 
         const existingPrice = await pool.query(
             `SELECT * FROM retailsellingprice WHERE "created_at" = $1`,
@@ -21,10 +21,10 @@ exports.addsellingprice = async (req, res) => {
 
 
         const sellingprice = await pool.query(
-            `INSERT INTO retailsellingprice("ms", "hsd", "speed","created_at") 
-             VALUES ($1, $2, $3, $4) 
+            `INSERT INTO retailsellingprice("ms", "hsd", "speed","cng","created_at") 
+             VALUES ($1, $2, $3, $4,$5) 
              RETURNING *`,
-            [ ms, hsd, speed,created_at]
+            [ ms, hsd, cng,speed,created_at]
         );
 
         res.status(200).json({

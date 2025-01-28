@@ -2,53 +2,7 @@ const pool = require('../db/db');
 
  
  
-// exports.getPumpDetailsbydate = async (req, res) => {
-//   try {
-//     const { date, operator_name } = req.query;
-
-//     const operatorName = parseInt(operator_name, 10);
-
-//     if (isNaN(operatorName)) {
-//       return res.status(400).json({ error: 'Invalid operator_name. It must be a number.' });
-//     }
-
-//     if (!date) {
-//       return res.status(400).json({ error: 'Date is required.' });
-//     }
-
-//     const query = `
-//       SELECT 
-//         ps.*,
-//         COALESCE(a."pumpNumber", 'Not Assigned') AS pumpNumber,
-//         COALESCE(a.operatorshift, 'Unknown') AS operatorshift,
-//         e."employeeName" AS operator_name
-//       FROM 
-//         attendence a
-//       INNER JOIN 
-//         pump_sales ps ON ps.attendence_id = a.attendence_id
-//       INNER JOIN 
-//         employees e ON e.employee_id = a.operator_name
-//       WHERE
-//         a.date::date = $1 AND a.operator_name = $2;
-//     `;
-
-//     console.log('Query Parameters:', { date, operatorName });
-
-//     const result = await pool.query(query, [date, operatorName]);
-
-//     console.log('Query Result:', result.rows);
-
-//     res.status(200).json(result.rows);
-//   } catch (err) {
-//     console.error('Error fetching pump details:', err.stack);
-//     res.status(500).json({ error: 'Failed to fetch pump details' });
-//   }
-// };
-
-
-
-
-// latest pumpsalesget By date 
+  
 exports.getPumpDetailsbydate = async (req, res) => {
   try {
     const { date, operator_name } = req.query;
@@ -148,8 +102,8 @@ if (checkResult.rows.length > 0) {
         }
 
         const columnName = row.fuel_type.toLowerCase(); // 'ms', 'hsd', or 'speed'
-        if (!['ms', 'hsd', 'speed'].includes(columnName)) {
-          row.retail_price = null; // Invalid fuel type, skip retail price
+        if (!['ms', 'hsd', 'speed','cng'].includes(columnName)) {
+          row.retail_price = null;  
         } else {
           const rspQuery = `
             SELECT rsp.${columnName} AS price
@@ -182,17 +136,18 @@ exports.addPumpSales = async (req, res) => {
     if (!Array.isArray(pumpSalesUpdates) || pumpSalesUpdates.length === 0) {
       return res.status(400).json({
         statusCode: 400,
-        message: 'should not be Empty',
+        message: 'Request body should be a non-empty array.',
       });
     }
 
     for (const pumpSale of pumpSalesUpdates) {
-      const { attendence_id, cmr, omr, res_id, amount ,sale} = pumpSale;
+      const { pump_sale_id, attendence_id, cmr, omr, res_id, amount, sale } = pumpSale;
 
-      if (!attendence_id) {
+      // Validate required fields
+      if (!attendence_id || !pump_sale_id) {
         return res.status(400).json({
           statusCode: 400,
-          message: 'attendence_id is required for each pump sale update.',
+          message: 'Both attendence_id and pump_sale_id are required for updates.',
         });
       }
 
@@ -200,6 +155,7 @@ exports.addPumpSales = async (req, res) => {
       const values = [];
       let index = 1;
 
+      // Add dynamic fields
       if (cmr !== undefined) {
         fields.push(`"cmr" = $${index++}`);
         values.push(cmr);
@@ -220,43 +176,51 @@ exports.addPumpSales = async (req, res) => {
         fields.push(`"sale" = $${index++}`);
         values.push(sale);
       }
+
+      // Add default status field
       fields.push(`"status" = $${index++}`);
       values.push(1);
 
+      // Ensure there are fields to update
       if (fields.length === 0) {
         return res.status(400).json({
           statusCode: 400,
-          message: 'No fields provided to update in one of the pump sales objects.',
+          message: `No fields provided to update for pump_sale_id ${pump_sale_id}.`,
         });
       }
 
-      // Add attendence_id for the WHERE clause
-      values.push(attendence_id);
+      // Add pump_sale_id for WHERE clause
+      values.push(pump_sale_id);
 
       const query = `
         UPDATE pump_sales
         SET ${fields.join(', ')}
-        WHERE "attendence_id" = $${index}
+        WHERE "pump_sale_id" = $${index}
         RETURNING *;
       `;
 
       const result = await pool.query(query, values);
 
+      console.log(`Updated pump_sale_id ${pump_sale_id}:`, result.rows);
+
       if (result.rowCount === 0) {
         return res.status(404).json({
           statusCode: 404,
-          message: `No pump sales found with attendence_id ${attendence_id}`,
+          message: `No pump sales record found with pump_sale_id ${pump_sale_id}.`,
         });
       }
     }
 
     res.status(200).json({
       statusCode: 200,
-      message: 'Pump sales updated successfully',
+      message: 'Pump sales updated successfully for all records.',
     });
   } catch (err) {
-    console.error('Error updating pump sales:', err.message);
-    res.status(500).json({ error: 'Failed to update pump sales' });
+    console.error('Error updating pump sales:', err);
+    res.status(500).json({
+      statusCode: 500,
+      error: 'Failed to update pump sales. Please try again later.',
+    });
   }
 };
 
