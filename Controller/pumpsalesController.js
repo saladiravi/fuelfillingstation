@@ -1,8 +1,8 @@
 const pool = require('../db/db');
 
- 
- 
-  
+
+
+
 exports.getPumpDetailsbydate = async (req, res) => {
   try {
     const { date, operator_name } = req.query;
@@ -16,7 +16,7 @@ exports.getPumpDetailsbydate = async (req, res) => {
     if (!date) {
       return res.status(400).json({ error: 'Date is required.' });
     }
- 
+
 
     // Check if data for the selected date and operator already exists
     const checkQuery = `
@@ -29,14 +29,14 @@ exports.getPumpDetailsbydate = async (req, res) => {
     AND ps.status = 1; -- Check if status is 1 in pump_sales
 `;
 
-const checkResult = await pool.query(checkQuery, [date, operatorName ]);
+    const checkResult = await pool.query(checkQuery, [date, operatorName]);
 
-if (checkResult.rows.length > 0) {
-  return res.status(200).json({ 
-    message: 'Data already added for the selected date, operator, and shift.', 
-    data: checkResult.rows 
-  });
-}
+    if (checkResult.rows.length > 0) {
+      return res.status(200).json({
+        message: 'Data already added for the selected date, operator, and shift.',
+        data: checkResult.rows
+      });
+    }
 
     const query = `
       SELECT 
@@ -57,7 +57,6 @@ if (checkResult.rows.length > 0) {
         a.date::date = $1 AND a.operator_name = $2;
     `;
 
-    console.log('Query Parameters:', { date, operatorName });
 
     const result = await pool.query(query, [date, operatorName]);
 
@@ -83,7 +82,7 @@ if (checkResult.rows.length > 0) {
           const prevShiftResult = await pool.query(prevShiftQuery, [date, row.bay_side, row.fuel_type]);
           row.omr = prevShiftResult.rows.length > 0 ? prevShiftResult.rows[0].cmr : null;
         } else if (row.operatorshift === 'B') {
-    
+
           const sameDayShiftQuery = `
           SELECT ps."cmr"
           FROM pump_sales ps
@@ -94,16 +93,16 @@ if (checkResult.rows.length > 0) {
             AND ps.bay_side = $2
             AND ps.fuel_type = $3;
         `;
-        const sameDayShiftResult = await pool.query(sameDayShiftQuery, [date, row.bay_side, row.fuel_type]);
-        row.omr = sameDayShiftResult.rows.length > 0 ? sameDayShiftResult.rows[0].cmr : null;
-     
+          const sameDayShiftResult = await pool.query(sameDayShiftQuery, [date, row.bay_side, row.fuel_type]);
+          row.omr = sameDayShiftResult.rows.length > 0 ? sameDayShiftResult.rows[0].cmr : null;
+
         } else {
-          row.omr = null;  
+          row.omr = null;
         }
 
         const columnName = row.fuel_type.toLowerCase(); // 'ms', 'hsd', or 'speed'
-        if (!['ms', 'hsd', 'speed','cng'].includes(columnName)) {
-          row.retail_price = null;  
+        if (!['ms', 'hsd', 'speed', 'cng'].includes(columnName)) {
+          row.retail_price = null;
         } else {
           const rspQuery = `
             SELECT rsp.${columnName} AS price
@@ -113,12 +112,10 @@ if (checkResult.rows.length > 0) {
           const rspResult = await pool.query(rspQuery, [date]);
           row.retail_price = rspResult.rows.length > 0 ? rspResult.rows[0].price : null;
         }
-        
+
         return row;
       })
     );
-
-    console.log('Processed Result:', processedRows);
 
     res.status(200).json(processedRows);
   } catch (err) {
@@ -128,7 +125,7 @@ if (checkResult.rows.length > 0) {
 };
 
 
-   
+
 exports.addPumpSales = async (req, res) => {
   try {
     const pumpSalesUpdates = req.body;
@@ -143,7 +140,7 @@ exports.addPumpSales = async (req, res) => {
     for (const pumpSale of pumpSalesUpdates) {
       const { pump_sale_id, attendence_id, cmr, omr, res_id, amount, sale } = pumpSale;
 
-      // Validate required fields
+      
       if (!attendence_id || !pump_sale_id) {
         return res.status(400).json({
           statusCode: 400,
@@ -155,7 +152,7 @@ exports.addPumpSales = async (req, res) => {
       const values = [];
       let index = 1;
 
-      // Add dynamic fields
+      
       if (cmr !== undefined) {
         fields.push(`"cmr" = $${index++}`);
         values.push(cmr);
@@ -200,9 +197,7 @@ exports.addPumpSales = async (req, res) => {
       `;
 
       const result = await pool.query(query, values);
-
-      console.log(`Updated pump_sale_id ${pump_sale_id}:`, result.rows);
-
+ 
       if (result.rowCount === 0) {
         return res.status(404).json({
           statusCode: 404,
@@ -273,7 +268,7 @@ exports.getPumpSalesanydate = async (req, res) => {
     }
 
     const body = `
-      SELECT ps.pump_sale_id, ps.bay_side, ps.fuel_type, ps.omr, ps.cmr, ps.sale, ps.amount,
+      SELECT ps.pump_sale_id, ps.bay_side, ps.fuel_type, ps.omr,ps.res_id, ps.cmr, ps.sale, ps.amount,
              a."pumpNumber", a.operatorshift, e."employeeName", ps.created_at, e.employee_id
       FROM pump_sales ps
       JOIN attendence a ON ps.attendence_id = a.attendence_id
@@ -312,6 +307,7 @@ exports.getPumpSalesanydate = async (req, res) => {
           cmr: sale.cmr,
           sale: sale.sale,
           amount: sale.amount,
+          res_id:sale.res_id
         });
       });
 
@@ -328,7 +324,54 @@ exports.getPumpSalesanydate = async (req, res) => {
       });
     }
   } catch (err) {
-     
+
+    res.status(500).json({ error: "Failed to fetch pump sales" });
+  }
+};
+
+
+
+exports.getpumsaleSearchbydate = async (req, res) => {
+  try {
+    const { created_at } = req.body;
+
+    if (!created_at) {
+      return res.status(400).json({
+        statuscode: 400,
+        message: "Date (created_at) is required",
+      });
+    }
+
+    const query = `
+      SELECT DISTINCT ON (e.employee_id) 
+        ps.pump_sale_id, ps.bay_side, ps.fuel_type, ps.amount, ps.created_at,
+        a."pumpNumber", a.operatorshift, e."employeeName", a.attendence_id, e.employee_id
+      FROM pump_sales ps
+      JOIN attendence a ON ps.attendence_id = a.attendence_id
+      JOIN employees e ON a.operator_name = e.employee_id
+      WHERE ps.created_at::date = $1
+      ORDER BY e.employee_id, ps.created_at DESC
+    `;
+
+    const result = await pool.query(query, [created_at]);
+
+    console.log('Filtered Pump Sales Result:', result.rows);
+
+    if (result.rows.length > 0) {
+      res.status(200).json({
+        statuscode: 200,
+        message: `Pump sales for ${created_at} fetched successfully`,
+        employees: result.rows
+      });
+    } else {
+      res.status(404).json({
+        statuscode: 404,
+        message: `No pump sales found for ${created_at}`,
+        employees: []
+      });
+    }
+  } catch (err) {
+    console.error("Error fetching pump sales:", err);
     res.status(500).json({ error: "Failed to fetch pump sales" });
   }
 };

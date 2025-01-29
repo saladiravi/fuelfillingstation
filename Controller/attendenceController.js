@@ -228,3 +228,111 @@ exports.updateAttendence = async (req, res) => {
   }
 }
 
+
+exports.getAttedencetoday = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        a.attendence_id,
+        a.date,
+        a."pumpNumber", 
+        a.remarks,
+        e."employeeName" AS operator_name,
+        a.operatorshift,
+        ARRAY_AGG(
+          JSON_BUILD_OBJECT(
+            'bay_side', p.bay_side
+          )
+        ) AS pump_sales
+      FROM 
+        attendence a
+      INNER JOIN 
+        employees e 
+        ON a.operator_name = e.employee_id
+      INNER JOIN 
+        pump_sales p
+        ON a.attendence_id = p.attendence_id
+      WHERE a.date = CURRENT_DATE
+      GROUP BY 
+        a.attendence_id, a.date, a."pumpNumber", a.remarks, e."employeeName", a.operatorshift;
+    `;
+
+    const attendenceDetails = await pool.query(query);
+
+    if (attendenceDetails.rows.length === 0) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'No records found'
+      });
+    }
+
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Attendance details fetched successfully',
+      data: attendenceDetails.rows
+    });
+
+  } catch (err) {
+    console.error('Error fetching attendance details:', err.message);
+    res.status(500).json({ error: 'Failed to fetch attendance details' });
+  }
+};
+
+
+exports.getdateAtendenceSearch = async (req, res) => {
+  try {
+    const { date } = req.body;
+
+    if (!date) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Date is required'
+      });
+    }
+
+    const query = `
+      SELECT 
+        a.attendence_id,
+        a.date,
+        a."pumpNumber", 
+        a.remarks,
+        e."employeeName" AS operator_name,
+        a.operatorshift,
+        ARRAY_AGG(
+          JSON_BUILD_OBJECT(
+            'bay_side', p.bay_side
+          )
+        ) AS pump_sales
+      FROM 
+        attendence a
+      INNER JOIN 
+        employees e 
+        ON a.operator_name = e.employee_id
+      INNER JOIN 
+        pump_sales p
+        ON a.attendence_id = p.attendence_id
+      WHERE a.date = $1
+      GROUP BY 
+        a.attendence_id, a.date, a."pumpNumber", a.remarks, e."employeeName", a.operatorshift;
+    `;
+
+    const attendByDate = await pool.query(query, [date]);
+
+    if (attendByDate.rows.length === 0) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'No records found'
+      });
+    }
+
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Attendance details fetched successfully',
+      data: attendByDate.rows
+    });
+
+  } catch (error) {
+    console.error('Error fetching attendance details:', error.message);
+    res.status(500).json({ error: 'Failed to fetch attendance details' });
+  }
+};
