@@ -263,9 +263,7 @@ exports.getTodaysPumpSales = async (req, res) => {
 
 exports.getPumpSalesanydate = async (req, res) => {
   try {
-    const { created_at } = req.query;  
-
-    console.log("Received date:", created_at); 
+    const { created_at } = req.body;  
 
     if (!created_at) {
       return res.status(400).json({
@@ -274,10 +272,9 @@ exports.getPumpSalesanydate = async (req, res) => {
       });
     }
 
-    const query = `
-      SELECT DISTINCT ON (e.employee_id) 
-             ps.pump_sale_id, ps.bay_side, ps.fuel_type, ps.amount, ps.created_at, 
-             a."pumpNumber", a.operatorshift, e."employeeName", a.attendence_id, e.employee_id
+    const body = `
+      SELECT ps.pump_sale_id, ps.bay_side, ps.fuel_type, ps.omr, ps.cmr, ps.sale, ps.amount,
+             a."pumpNumber", a.operatorshift, e."employeeName", ps.created_at, e.employee_id
       FROM pump_sales ps
       JOIN attendence a ON ps.attendence_id = a.attendence_id
       JOIN employees e ON a.operator_name = e.employee_id
@@ -285,25 +282,53 @@ exports.getPumpSalesanydate = async (req, res) => {
       ORDER BY e.employee_id, ps.created_at DESC
     `;
 
-    const result = await pool.query(query, [created_at]);
-
-    console.log('Filtered Pump Sales Result:', result.rows);
+    const result = await pool.query(body, [created_at]);
 
     if (result.rows.length > 0) {
-      res.status(200).json({
+      const salesData = [];
+
+      // Loop through the result to organize data
+      result.rows.forEach((sale) => {
+        let existingOperator = salesData.find(
+          (data) => data.operatorName === sale.employeeName && data.pumpNumber === sale.pumpNumber
+        );
+
+        if (!existingOperator) {
+          existingOperator = {
+            date: created_at,
+            operatorName: sale.employeeName,
+            pumpNumber: sale.pumpNumber,
+            operatorShift: sale.operatorshift,
+            salesDetails: []
+          };
+
+          salesData.push(existingOperator);
+        }
+
+        existingOperator.salesDetails.push({
+          baySide: sale.bay_side,
+          fuelType: sale.fuel_type,
+          omr: sale.omr,
+          cmr: sale.cmr,
+          sale: sale.sale,
+          amount: sale.amount,
+        });
+      });
+
+      return res.status(200).json({
         statuscode: 200,
         message: `Pump sales fetched successfully for ${created_at}`,
-        employees: result.rows
+        sales: salesData
       });
     } else {
-      res.status(404).json({
+      return res.status(404).json({
         statuscode: 404,
         message: `No pump sales found for ${created_at}`,
-        employees: []
+        sales: []
       });
     }
   } catch (err) {
-    console.error("Error fetching pump sales by date:", err);
+    
     res.status(500).json({ error: "Failed to fetch pump sales" });
   }
 };
