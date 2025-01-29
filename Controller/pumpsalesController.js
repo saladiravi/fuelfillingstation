@@ -225,31 +225,85 @@ exports.addPumpSales = async (req, res) => {
 };
 
 
-  exports.getPumsales=async(req,res)=>
-    {
-        try{
-            const result=await pool.query("SELECT * FROM employees"
-            )
-            if(result){
-                res.status.json({
-                    statuscode:200,
-                    message:'Pump Sales fetched Sucessfully',
-                    pumpsales:result.rows
-                })
-            }
-        }catch(err){
-            res.status(500).json({error:'Failed to add pump sales'});
-        }
+exports.getTodaysPumpSales = async (req, res) => {
+  try {
+    const query = `
+      SELECT DISTINCT ON (e.employee_id) ps.pump_sale_id, ps.bay_side, ps.fuel_type, ps.amount, ps.created_at, 
+             a."pumpNumber", a.operatorshift, e."employeeName", a.attendence_id, e.employee_id
+      FROM pump_sales ps
+      JOIN attendence a ON ps.attendence_id = a.attendence_id
+      JOIN employees e ON a.operator_name = e.employee_id
+      WHERE ps.created_at::date = CURRENT_DATE
+      ORDER BY e.employee_id, ps.created_at DESC
+    `;
+
+    const result = await pool.query(query);
+    console.log('Filtered Pump Sales Result:', result.rows);
+
+    if (result.rows.length > 0) {
+      res.status(200).json({
+        statuscode: 200,
+        message: "Today's pump sales fetched successfully",
+        employees: result.rows
+      });
+    } else {
+      res.status(404).json({
+        statuscode: 404,
+        message: "No pump sales found for today",
+        employees: []
+      });
+    }
+  } catch (err) {
+    console.error("Error fetching today's pump sales:", err);
+    res.status(500).json({ error: "Failed to fetch pump sales" });
+  }
+};
+
+
+
+exports.getPumpSalesanydate = async (req, res) => {
+  try {
+    const { created_at } = req.query;  
+
+    console.log("Received date:", created_at); 
+
+    if (!created_at) {
+      return res.status(400).json({
+        statuscode: 400,
+        message: "Date parameter is required",
+      });
     }
 
+    const query = `
+      SELECT DISTINCT ON (e.employee_id) 
+             ps.pump_sale_id, ps.bay_side, ps.fuel_type, ps.amount, ps.created_at, 
+             a."pumpNumber", a.operatorshift, e."employeeName", a.attendence_id, e.employee_id
+      FROM pump_sales ps
+      JOIN attendence a ON ps.attendence_id = a.attendence_id
+      JOIN employees e ON a.operator_name = e.employee_id
+      WHERE ps.created_at::date = $1
+      ORDER BY e.employee_id, ps.created_at DESC
+    `;
 
-    exports.getpumpSalesbyId=async (req,res)=>
-    {
-        try{
-            const {pump_sale_id}=req.body
-            
-        }catch(err){
-            res.status(500).json({error:'failed to add pump sales'});
+    const result = await pool.query(query, [created_at]);
 
-        }
+    console.log('Filtered Pump Sales Result:', result.rows);
+
+    if (result.rows.length > 0) {
+      res.status(200).json({
+        statuscode: 200,
+        message: `Pump sales fetched successfully for ${created_at}`,
+        employees: result.rows
+      });
+    } else {
+      res.status(404).json({
+        statuscode: 404,
+        message: `No pump sales found for ${created_at}`,
+        employees: []
+      });
     }
+  } catch (err) {
+    console.error("Error fetching pump sales by date:", err);
+    res.status(500).json({ error: "Failed to fetch pump sales" });
+  }
+};
