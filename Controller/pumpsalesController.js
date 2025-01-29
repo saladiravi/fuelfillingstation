@@ -263,12 +263,12 @@ exports.getTodaysPumpSales = async (req, res) => {
 
 exports.getPumpSalesanydate = async (req, res) => {
   try {
-    const { created_at } = req.body;  
+    const { created_at, operatorName } = req.body;  // Get both date and operatorName from request body
 
-    if (!created_at) {
+    if (!created_at || !operatorName) {
       return res.status(400).json({
         statuscode: 400,
-        message: "Date parameter is required",
+        message: "Date and operatorName parameters are required",
       });
     }
 
@@ -278,11 +278,11 @@ exports.getPumpSalesanydate = async (req, res) => {
       FROM pump_sales ps
       JOIN attendence a ON ps.attendence_id = a.attendence_id
       JOIN employees e ON a.operator_name = e.employee_id
-      WHERE ps.created_at::date = $1
+      WHERE ps.created_at::date = $1 AND e."employeeName" = $2
       ORDER BY e.employee_id, ps.created_at DESC
     `;
 
-    const result = await pool.query(body, [created_at]);
+    const result = await pool.query(body, [created_at, operatorName]);
 
     if (result.rows.length > 0) {
       const salesData = [];
@@ -317,18 +317,18 @@ exports.getPumpSalesanydate = async (req, res) => {
 
       return res.status(200).json({
         statuscode: 200,
-        message: `Pump sales fetched successfully for ${created_at}`,
+        message: `Pump sales fetched successfully for ${created_at} and operator ${operatorName}`,
         sales: salesData
       });
     } else {
       return res.status(404).json({
         statuscode: 404,
-        message: `No pump sales found for ${created_at}`,
+        message: `No pump sales found for ${created_at} and operator ${operatorName}`,
         sales: []
       });
     }
   } catch (err) {
-    
+     
     res.status(500).json({ error: "Failed to fetch pump sales" });
   }
 };
