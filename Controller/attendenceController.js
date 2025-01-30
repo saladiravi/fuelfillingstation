@@ -282,9 +282,7 @@ exports.getAttedencetoday = async (req, res) => {
 exports.getdateAtendenceSearch = async (req, res) => {
   try {
     const { date } = req.body;
-    const formattedDate = moment(date, "DD-MM-YYYY").format("YYYY-MM-DD");
-    
-      
+
 
     if (!date) {
       return res.status(400).json({
@@ -319,7 +317,7 @@ exports.getdateAtendenceSearch = async (req, res) => {
         a.attendence_id, a.date, a."pumpNumber", a.remarks, e."employeeName", a.operatorshift;
     `;
 
-    const attendByDate = await pool.query(query, [formattedDate]);
+    const attendByDate = await pool.query(query, [date]);
 
     if (attendByDate.rows.length === 0) {
       return res.status(404).json({
