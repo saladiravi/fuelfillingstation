@@ -7,7 +7,7 @@ const attendenceRoutes = require('./routes/attendenceroutes');
 const adminRoutes = require('./routes/adminroutes');
 const respRoutes=require('./routes/retailSellingPrice');
 const pumpsalesRoutes=require('./routes/Pumpsalesroutes');
-
+const pumpsalereports=require('./routes/Pumsalesreportsroutes')
 const app = express();
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Serve static files
@@ -19,6 +19,7 @@ app.use('/attendence', attendenceRoutes);
 app.use('/admin', adminRoutes);
 app.use('/res',respRoutes);
 app.use('/pumpsales',pumpsalesRoutes);
+app.use('/reports',pumpsalereports)
 
 app.listen(5000, () => {
     console.log("Server is running on port 5000");
