@@ -334,8 +334,7 @@ exports.getpumsaleSearchbydate = async (req, res) => {
   try {
     const { created_at } = req.body;
     
-    const formattedDate = moment(created_at, "DD-MM-YYYY").format("YYYY-MM-DD");
-    
+ 
     if (!created_at) {
       return res.status(400).json({
         statuscode: 400,
@@ -354,9 +353,9 @@ exports.getpumsaleSearchbydate = async (req, res) => {
       ORDER BY e.employee_id, ps.created_at DESC
     `;
 
-    const result = await pool.query(query, [formattedDate]);
+    const result = await pool.query(query, [created_at]);
 
-    console.log('Filtered Pump Sales Result:', result.rows);
+    
 
     if (result.rows.length > 0) {
       res.status(200).json({
