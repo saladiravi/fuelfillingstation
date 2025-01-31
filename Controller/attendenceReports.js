@@ -31,9 +31,9 @@ exports.getAttendanceByDateRange = async (req, res) => {
           ) AS pump_sales
         FROM 
           attendence a
-        INNER JOIN 
-          employees e 
-          ON a.operator_name = e.employee_id
+    INNER JOIN employees e 
+  ON CAST(a.operator_name AS INTEGER) = e.employee_id
+
         INNER JOIN 
           pump_sales p
           ON a.attendence_id = p.attendence_id

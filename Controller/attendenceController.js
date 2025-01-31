@@ -2,83 +2,6 @@ const pool = require('../db/db');
 const moment = require('moment');
 const format = require("pg-format");
 
-// exports.addattendence = async (req, res) => {
-//   try {
-//     const {
-//       date,
-//       operator_name,
-//       operatorshift,
-//       pumpNumber,
-//       bay_side,
-//       attendence,
-//       remarks,
-//     } = req.body;
-
-//     const attend = await pool.query(
-//       `INSERT INTO attendence(
-//           "date", "operator_name", "operatorshift", "pumpNumber",
-//           "attendence", "remarks"
-//       ) VALUES($1, $2, $3, $4, $5, $6) RETURNING *`,
-//       [date, operator_name, operatorshift, pumpNumber, attendence, remarks]
-//     );
-
-    
-
-//     const attendenceId = attend.rows[0]?.attendence_id;
-//     if (!attendenceId) {
-//       throw new Error("Failed to insert attendance.");
-//     }
-
-//     const defaultPumpSales = [];
-//     for (const bay of bay_side || []) {
-//       const { bay_name, guns } = bay;
-//       for (const gunInfo of guns || []) {
-//         const { gun, fuel_type } = gunInfo;
-//         defaultPumpSales.push([
-//           attendenceId,
-//           bay_name,
-//           gun,
-//           fuel_type,
-//           null,
-//           null,
-//           null,
-//           null,
-//           new Date(),
-//         ]);
-//       }
-//     }
-
-
-//     if (defaultPumpSales.length === 0) {
-//       return res.status(400).json({ error: "No pump sales data to insert." });
-//     }
-
-//     const pumpSalesQuery = `
-//     INSERT INTO pump_sales(
-//       attendence_id, bay_side, 
-//       guns, fuel_type, cmr, omr, res_id, amount, created_at
-//     ) VALUES %L RETURNING *`;
-//     const formattedQuery = format(pumpSalesQuery, defaultPumpSales);
-
-//     //  console.log(formattedQuery, "formattedquery");
-
-//     const pumpSalesResult = await pool.query(formattedQuery);
-//     // console.log(pumpSalesResult.rows, "Pump Sales Inserted");
-
-//     res.json({
-//       statusCode: 200,
-//       attendance: attend.rows[0],
-//       pumpSales: pumpSalesResult.rows,
-//     });
-//   } catch (err) {
-//     // console.error(err); // Log the error details for debugging
-//     res.status(500).json({ error: err.message || "Failed to insert attendance and pump sales" });
-//   }
-// };
-
-
-// new addAttendence Function 
-
 exports.addattendence = async (req, res) => {
   try {
     const {
@@ -154,6 +77,10 @@ exports.addattendence = async (req, res) => {
 };
 
 
+
+
+
+ 
 exports.getAttendenceDetails = async (req, res) => {
   try {
     const query = `
