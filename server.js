@@ -17,6 +17,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Serve s
 app.use(express.json());
 app.use(cors());
 
+app.get("/", (req, res) => {
+    res.send("Hello, your Node.js server is working!");
+});
+
+
 app.use('/employee', employeeRoutes);
 app.use('/attendence', attendenceRoutes);
 app.use('/admin', adminRoutes);
