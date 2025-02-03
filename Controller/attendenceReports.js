@@ -15,7 +15,7 @@ exports.getAttendanceByDateRange = async (req, res) => {
 
     // Define the query
     let query = `
-    SELECT 
+ SELECT 
   a.attendence_id,
   a.date,
   a."pumpNumber", 
@@ -29,19 +29,20 @@ exports.getAttendanceByDateRange = async (req, res) => {
 FROM 
   attendence a
 INNER JOIN employees e 
-  ON CAST(a.operator_name AS INTEGER) = e.employee_id  -- ✅ FIXED: Ensure proper type match
+  ON a.operator_name = e.employee_id::TEXT  -- ✅ FIXED: Ensure proper type match
 INNER JOIN pump_sales p
   ON a.attendence_id = p.attendence_id
 WHERE a.date BETWEEN $1 AND $2
 AND ($3::TEXT IS NULL OR e."employeeName" ILIKE $3::TEXT)
 GROUP BY 
   a.attendence_id, a.date, a."pumpNumber", a.remarks, e."employeeName", a.operatorshift, a.attendence;
+
   `;
 
     const queryParams = [fromDate, toDate, employeeName ? `%${employeeName}%` : null];
 
    console.log('queryParams',queryParams);
-   
+
     const attendanceDetails = await pool.query(query, queryParams);
 
     console.log(attendanceDetails,'attendenceDetails');
