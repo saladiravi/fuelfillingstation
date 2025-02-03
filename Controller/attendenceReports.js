@@ -29,11 +29,11 @@ exports.getAttendanceByDateRange = async (req, res) => {
 FROM 
   attendence a
 INNER JOIN employees e 
-  ON a.operator_name = e.employee_id
+  ON CAST(a.operator_name AS INTEGER) = e.employee_id  -- ✅ FIXED: Ensure proper type match
 INNER JOIN pump_sales p
   ON a.attendence_id = p.attendence_id
 WHERE a.date BETWEEN $1 AND $2
-AND ($3::TEXT IS NULL OR e."employeeName" ILIKE $3::TEXT)  -- 🔥 FIXED: Cast to TEXT
+AND ($3::TEXT IS NULL OR e."employeeName" ILIKE $3::TEXT)
 GROUP BY 
   a.attendence_id, a.date, a."pumpNumber", a.remarks, e."employeeName", a.operatorshift, a.attendence;
 
