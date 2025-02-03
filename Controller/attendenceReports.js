@@ -36,13 +36,16 @@ WHERE a.date BETWEEN $1 AND $2
 AND ($3::TEXT IS NULL OR e."employeeName" ILIKE $3::TEXT)
 GROUP BY 
   a.attendence_id, a.date, a."pumpNumber", a.remarks, e."employeeName", a.operatorshift, a.attendence;
-
-    `;
+  `;
 
     const queryParams = [fromDate, toDate, employeeName ? `%${employeeName}%` : null];
 
-    // Execute the query
+   console.log('queryParams',queryParams);
+   
     const attendanceDetails = await pool.query(query, queryParams);
+
+    console.log(attendanceDetails,'attendenceDetails');
+
 
     if (attendanceDetails.rows.length === 0) {
       return res.status(404).json({
