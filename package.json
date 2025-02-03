@@ -1,5 +1,5 @@
 {
-  "name": "fastfuelstation",
+  "name": "fuelfillingstation",
   "version": "1.0.0",
   "description": "nodejs postgres Restapi",
   "main": "server.js",
