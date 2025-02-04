@@ -56,7 +56,7 @@ exports.register=async (req, res) => {
 
         res.status(201).json({ message: 'Admin registered successfully' });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error("Error Details:", error);   
+        res.status(500).json({ error: error.message });
     }
 };
