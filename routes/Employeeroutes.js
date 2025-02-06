@@ -7,7 +7,8 @@ router.post(
   '/addemployee',
   upload.fields([
     { name: 'aadhar_Image', maxCount: 1 },
-    { name: 'profile_image', maxCount: 1 }
+    { name: 'profile_image', maxCount: 1 },
+    {name:'aadhar_backside_image',maxCount:1}
   ]),
   employeeController.createEmployee
 );
