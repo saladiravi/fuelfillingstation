@@ -24,6 +24,8 @@ const aadharImage = req.files?.aadhar_Image?.[0]?.filename
   
   const aadharbackside = req.files?.aadhar_backsideimage?.[0]?.filename
   ?`/uploads/${req.files.aadhar_backsideimage[0].filename}`:null;
+
+  console.log("Aadhar Backside Image:", aadharbackside); 
   
     const emp = await pool.query(
       `INSERT INTO employees(

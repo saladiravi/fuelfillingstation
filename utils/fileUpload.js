@@ -24,6 +24,7 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     const allowedFields = ['aadhar_Image', 'profile_image','aadhar_backsideimage']; 
     if (!allowedFields.includes(file.fieldname)) {
+      console.error(`Unexpected file field: ${file.fieldname}`);
       return cb(new multer.MulterError('LIMIT_UNEXPECTED_FILE'));
     }
     cb(null, true);
