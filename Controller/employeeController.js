@@ -28,7 +28,7 @@ const aadharImage = req.files?.aadhar_Image?.[0]?.filename
     const emp = await pool.query(
       `INSERT INTO employees(
         "employeeName", "phoneNumber", "mobileNumber", "aadharno", 
-        "aadhar_Image", "profile_image", aadhar_backside_image,"date", "Taddress", "Paddress", "statusname"
+        "aadhar_Image", "profile_image","aadhar_backside_image","date", "Taddress", "Paddress", "statusname"
       ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,$11) RETURNING *`,
       [employeeName, phoneNumber, mobileNumber, aadharno, aadharImage,aadharbackside, profileImage, date, Taddress, Paddress, statusname]
     );
