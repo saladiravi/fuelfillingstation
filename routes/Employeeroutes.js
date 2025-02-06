@@ -14,7 +14,7 @@ router.post(
 );
 
 router.get('/getEmployees',employeeController.getallEmployees);
-router.get("/employeebyid",employeeController.getEmployeeById);
+router.post("/employeebyid",employeeController.getEmployeeById);
 router.put(
     '/employeeid',
     upload.fields([
