@@ -23,7 +23,8 @@ const aadharImage = req.files?.aadhar_Image?.[0]?.filename
   : null;
   
   const aadharbackside = req.files?.aadhar_backside_image?.[0]?.filename
-  ?`/uploads/${req.files.aadhar_backside_image[0].filename}`:null;
+  ? `/uploads/${req.files.aadhar_backside_image[0].filename}`
+  : null;
   
     const emp = await pool.query(
       `INSERT INTO employees(
