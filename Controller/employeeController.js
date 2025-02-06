@@ -22,7 +22,7 @@ const aadharImage = req.files?.aadhar_Image?.[0]?.filename
   ? `/uploads/${req.files.aadhar_Image[0].filename}`
   : null;
   
-  const aadharbackside=req.files?.aadhar_backside_image?.[0]?.filename
+  const aadharbackside = req.files?.aadhar_backside_image?.[0]?.filename
   ?`/uploads/${req.files.aadhar_backside_image[0].filename}`:null;
   
     const emp = await pool.query(
@@ -30,7 +30,7 @@ const aadharImage = req.files?.aadhar_Image?.[0]?.filename
         "employeeName", "phoneNumber", "mobileNumber", "aadharno", 
         "aadhar_Image", "profile_image","aadhar_backside_image","date", "Taddress", "Paddress", "statusname"
       ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,$11) RETURNING *`,
-      [employeeName, phoneNumber, mobileNumber, aadharno, aadharImage,aadharbackside, profileImage, date, Taddress, Paddress, statusname]
+      [employeeName, phoneNumber, mobileNumber, aadharno, aadharImage, profileImage,aadharbackside, date, Taddress, Paddress, statusname]
     );
 
     res.status(200).json({
