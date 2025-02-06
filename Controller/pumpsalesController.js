@@ -257,7 +257,7 @@ exports.getTodaysPumpSales = async (req, res) => {
 
 exports.getPumpSalesanydate = async (req, res) => {
   try {
-    const { created_at, operatorName } = req.body;  // Get both date and operatorName from request body
+    const { created_at, operatorName } = req.body;   
 
     if (!created_at || !operatorName) {
       return res.status(400).json({

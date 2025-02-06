@@ -76,17 +76,21 @@ exports.getpricesbyid = async (req, res) => {
 
 exports.getpricebydate = async (req, res) => {
     try {
-        const { created_at } = req.body;
+        const { created_at } = req.body; // Use query parameters instead of body
 
-       
-        const formattedDate = moment(created_at, "DD-MM-YYYY").format("YYYY-MM-DD");
+        if (!created_at) {
+            return res.status(400).json({
+                statusCode: 400,
+                message: "created_at is required as a query parameter",
+            });
+        }
 
-         const pricedate = await pool.query(
-            "SELECT * FROM retailsellingprice WHERE created_at = $1",
-            [formattedDate]
+        // Query to fetch prices by date (assuming created_at is a TIMESTAMP)
+        const pricedate = await pool.query(
+            "SELECT * FROM retailsellingprice WHERE DATE(created_at) = $1",
+            [created_at]
         );
 
-         
         if (pricedate.rows.length === 0) {
             return res.status(404).json({
                 statusCode: 404,
@@ -94,22 +98,17 @@ exports.getpricebydate = async (req, res) => {
             });
         }
 
-        
-        const formattedPrices = pricedate.rows.map(record => ({
-            ...record,
-            date: moment(record.created_at).format("DD-MM-YYYY"),  
-        }));
-
         res.status(200).json({
             statusCode: 200,
             message: "Prices fetched successfully",
-            prices: formattedPrices,
+            prices: pricedate.rows, 
         });
     } catch (err) {
         console.error("Error fetching prices by date:", err.message);
         res.status(500).json({ error: "Failed to fetch prices" });
     }
 };
+
 
 
 

@@ -38,15 +38,14 @@ GROUP BY
   a.attendence_id, a.date, a."pumpNumber", a.remarks, e."employeeName", a.operatorshift, a.attendence;
 `;
 
-    // Set query parameters
+ 
     const queryParams = [fromDate, toDate, employee_id || null];
+ 
 
-    console.log('queryParams:', queryParams);
-
-    // Execute query
+  
     const attendanceDetails = await pool.query(query, queryParams);
 
-    console.log('Attendance Details:', attendanceDetails);
+ 
 
     if (attendanceDetails.rows.length === 0) {
       return res.status(404).json({

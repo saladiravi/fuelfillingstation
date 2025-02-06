@@ -60,11 +60,10 @@ exports.addattendence = async (req, res) => {
     ) VALUES %L RETURNING *`;
     const formattedQuery = format(pumpSalesQuery, defaultPumpSales);
 
-    //  console.log(formattedQuery, "formattedquery");
+     
 
     const pumpSalesResult = await pool.query(formattedQuery);
-    // console.log(pumpSalesResult.rows, "Pump Sales Inserted");
-
+    
     res.json({
       statusCode: 200,
       attendance: attend.rows[0],
