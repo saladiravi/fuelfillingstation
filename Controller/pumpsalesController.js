@@ -125,259 +125,260 @@ exports.getPumpDetailsbydate = async (req, res) => {
 
 
 
+// exports.addPumpSales = async (req, res) => {
+//   try {
+//     const pumpSalesUpdates = req.body;
+
+//     if (!Array.isArray(pumpSalesUpdates) || pumpSalesUpdates.length === 0) {
+//       return res.status(400).json({
+//         statusCode: 400,
+//         message: 'Request body should be a non-empty array.',
+//       });
+//     }
+
+//     for (const pumpSale of pumpSalesUpdates) {
+//       const { pump_sale_id, attendence_id, cmr, omr, res_id, amount, sale } = pumpSale;
+
+      
+//       if (!attendence_id || !pump_sale_id) {
+//         return res.status(400).json({
+//           statusCode: 400,
+//           message: 'Both attendence_id and pump_sale_id are required for updates.',
+//         });
+//       }
+
+//       const fields = [];
+//       const values = [];
+//       let index = 1;
+
+      
+//       if (cmr !== undefined) {
+//         fields.push(`"cmr" = $${index++}`);
+//         values.push(cmr);
+//       }
+//       if (omr !== undefined) {
+//         fields.push(`"omr" = $${index++}`);
+//         values.push(omr);
+//       }
+//       if (res_id !== undefined) {
+//         fields.push(`"res_id" = $${index++}`);
+//         values.push(res_id);
+//       }
+//       if (amount !== undefined) {
+//         fields.push(`"amount" = $${index++}`);
+//         values.push(amount);
+//       }
+//       if (sale !== undefined) {
+//         fields.push(`"sale" = $${index++}`);
+//         values.push(sale);
+//       }
+
+//       // Add default status field
+//       fields.push(`"status" = $${index++}`);
+//       values.push(1);
+
+//       // Ensure there are fields to update
+//       if (fields.length === 0) {
+//         return res.status(400).json({
+//           statusCode: 400,
+//           message: `No fields provided to update for pump_sale_id ${pump_sale_id}.`,
+//         });
+//       }
+
+//       // Add pump_sale_id for WHERE clause
+//       values.push(pump_sale_id);
+
+//       const query = `
+//         UPDATE pump_sales
+//         SET ${fields.join(', ')}
+//         WHERE "pump_sale_id" = $${index}
+//         RETURNING *;
+//       `;
+
+//       const result = await pool.query(query, values);
+ 
+//       if (result.rowCount === 0) {
+//         return res.status(404).json({
+//           statusCode: 404,
+//           message: `No pump sales record found with pump_sale_id ${pump_sale_id}.`,
+//         });
+//       }
+//     }
+
+//     res.status(200).json({
+//       statusCode: 200,
+//       message: 'Pump sales updated successfully for all records.',
+//     });
+//   } catch (err) {
+//     console.error('Error updating pump sales:', err);
+//     res.status(500).json({
+//       statusCode: 500,
+//       error: 'Failed to update pump sales. Please try again later.',
+//     });
+//   }
+// };
+
+
+
+
 exports.addPumpSales = async (req, res) => {
   try {
-    const pumpSalesUpdates = req.body;
+    const {
+      attendence_id,
+      pump_sale_amount,
+      shift_sales_amount,
+      dm_amount,
+      advance_amount,
+      credit_amount,
+      total_online_payment_amount,
+      pumpSales,
+      cash_notes,
+      cash_notes_advance,
+      credit_data,
+      online_payments,
+    } = req.body;
 
-    if (!Array.isArray(pumpSalesUpdates) || pumpSalesUpdates.length === 0) {
+    if (!attendence_id) {
       return res.status(400).json({
-        statusCode: 400,
-        message: 'Request body should be a non-empty array.',
+        statuscode: 400,
+        message: "Attendance ID is required",
       });
     }
 
-    for (const pumpSale of pumpSalesUpdates) {
-      const { pump_sale_id, attendence_id, cmr, omr, res_id, amount, sale } = pumpSale;
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
 
-      
-      if (!attendence_id || !pump_sale_id) {
-        return res.status(400).json({
-          statusCode: 400,
-          message: 'Both attendence_id and pump_sale_id are required for updates.',
+      // Check if the attendance_id already exists in pumpsales_shift_data
+      const existingShiftQuery = `SELECT pumpsale_shift_id FROM pumpsales_shift_data WHERE attendence_id = $1`;
+      const existingShift = await client.query(existingShiftQuery, [attendence_id]);
+      let pumpsale_shift_id;
+
+      if (existingShift.rows.length > 0) {
+        console.error("Transaction Error:", error);
+        await client.query("ROLLBACK");
+        return res.status(404).json({
+          statuscode: 404,
+          message: "Already data added to that field",
         });
       }
 
-      const fields = [];
-      const values = [];
-      let index = 1;
-
-      
-      if (cmr !== undefined) {
-        fields.push(`"cmr" = $${index++}`);
-        values.push(cmr);
-      }
-      if (omr !== undefined) {
-        fields.push(`"omr" = $${index++}`);
-        values.push(omr);
-      }
-      if (res_id !== undefined) {
-        fields.push(`"res_id" = $${index++}`);
-        values.push(res_id);
-      }
-      if (amount !== undefined) {
-        fields.push(`"amount" = $${index++}`);
-        values.push(amount);
-      }
-      if (sale !== undefined) {
-        fields.push(`"sale" = $${index++}`);
-        values.push(sale);
-      }
-
-      // Add default status field
-      fields.push(`"status" = $${index++}`);
-      values.push(1);
-
-      // Ensure there are fields to update
-      if (fields.length === 0) {
-        return res.status(400).json({
-          statusCode: 400,
-          message: `No fields provided to update for pump_sale_id ${pump_sale_id}.`,
-        });
-      }
-
-      // Add pump_sale_id for WHERE clause
-      values.push(pump_sale_id);
-
-      const query = `
-        UPDATE pump_sales
-        SET ${fields.join(', ')}
-        WHERE "pump_sale_id" = $${index}
-        RETURNING *;
+      // Insert new shift sales data
+      const shiftQuery = `
+        INSERT INTO pumpsales_shift_data (
+          attendence_id, pump_sale_amount, shift_sales_amount, dm_amount, advance_amount, credit_amount, total_online_payment_amount,
+          pump_sale_2000, pump_sale_500, pump_sale_200, pump_sale_100, pump_sale_50, 
+          pump_sale_20, pump_sale_10, pump_sale_5, pump_sale_2, pump_sale_1,
+          advance_2000, advance_500, advance_200, advance_100, advance_50, 
+          advance_20, advance_10, advance_5, advance_2, advance_1
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7,
+          $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
+          $18, $19, $20, $21, $22, $23, $24, $25, $26, $27
+        ) RETURNING pumpsale_shift_id;
       `;
 
-      const result = await pool.query(query, values);
- 
-      if (result.rowCount === 0) {
-        return res.status(404).json({
-          statusCode: 404,
-          message: `No pump sales record found with pump_sale_id ${pump_sale_id}.`,
+      const shiftValues = [
+        attendence_id,
+        pump_sale_amount || "0",
+        shift_sales_amount || "0",
+        dm_amount || "0",
+        advance_amount || "0",
+        credit_amount || "0",
+        total_online_payment_amount || "0",
+        cash_notes?.["pump_sale_2000"] || "0",
+        cash_notes?.["pump_sale_500"] || "0",
+        cash_notes?.["pump_sale_200"] || "0",
+        cash_notes?.["pump_sale_100"] || "0",
+        cash_notes?.["pump_sale_50"] || "0",
+        cash_notes?.["pump_sale_20"] || "0",
+        cash_notes?.["pump_sale_10"] || "0",
+        cash_notes?.["pump_sale_5"] || "0",
+        cash_notes?.["pump_sale_2"] || "0",
+        cash_notes?.["pump_sale_1"] || "0",
+        cash_notes_advance?.["advance_2000"] || "0",
+        cash_notes_advance?.["advance_500"] || "0",
+        cash_notes_advance?.["advance_200"] || "0",
+        cash_notes_advance?.["advance_100"] || "0",
+        cash_notes_advance?.["advance_50"] || "0",
+        cash_notes_advance?.["advance_20"] || "0",
+        cash_notes_advance?.["advance_10"] || "0",
+        cash_notes_advance?.["advance_5"] || "0",
+        cash_notes_advance?.["advance_2"] || "0",
+        cash_notes_advance?.["advance_1"] || "0",
+      ];
+
+      const shiftResult = await client.query(shiftQuery, shiftValues);
+      pumpsale_shift_id = shiftResult.rows[0].pumpsale_shift_id;
+
+      // Update pump sales data
+      if (Array.isArray(pumpSales)) {
+        for (const pumpSale of pumpSales) {
+          const { pump_sale_id, fuel_type, cmr, omr, amount, sale, guns ,res_id} = pumpSale;
+          if (!pump_sale_id) continue;
+
+          const updateQuery = `
+            UPDATE pump_sales
+            SET cmr = $1, omr = $2, amount = $3, sale = $4, fuel_type = $5, guns = $6,res_id=$7
+            WHERE pump_sale_id = $8;
+          `;
+          await client.query(updateQuery, [cmr, omr, amount, sale, fuel_type, guns,res_id, pump_sale_id]);
+        }
+      }
+
+      // Validate and process uploaded files
+      const billRecipts = Array.isArray(req.files) ? req.files.map(file => `/uploads/${file.filename}`) : [];
+      
+      // Attach the first uploaded file to credit_data (assuming one file per entry)
+      if (Array.isArray(credit_data)) {
+        credit_data.forEach((credit, index) => {
+          credit.bill_recipt = billRecipts[index] || null;
         });
       }
-    }
+       // Insert credit data
+      if (Array.isArray(credit_data)) {
+        for (const credit of credit_data) {
+          const { bill_no, customer_name, product, quantity, rsp,cost, bill_recipt } = credit;
 
-    res.status(200).json({
-      statusCode: 200,
-      message: 'Pump sales updated successfully for all records.',
-    });
+          const creditQuery = `
+            INSERT INTO credit_data (bill_no, customer_name, product, quantity, rsp,cost,  bill_recipt,pumpsale_shift_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7,$8);
+          `;
+          await client.query(creditQuery, [bill_no, customer_name, product, quantity, rsp, cost,bill_recipt, pumpsale_shift_id]);
+        }
+      }
+ 
+      // Insert online payment data
+      if (Array.isArray(online_payments)) {
+        for (const payment of online_payments) {
+          const { online_payment_amount, online_payment_type } = payment;
+
+          const paymentQuery = `
+            INSERT INTO online_payment_data (online_payment_amount, online_payment_type, pumpsale_shift_id)
+            VALUES ($1, $2, $3);
+          `;
+          await client.query(paymentQuery, [online_payment_amount, online_payment_type, pumpsale_shift_id]);
+        }
+      }
+
+      await client.query("COMMIT");
+
+      return res.status(200).json({
+        statuscode: 200,
+        message: "Pump sales and shift data updated successfully",
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error("Server Error:", err); 
+      return res.status(500).json({ error: "Failed to update pump sales and shift data" });
+    } finally {
+      client.release();
+    }
   } catch (err) {
-    console.error('Error updating pump sales:', err);
-    res.status(500).json({
-      statusCode: 500,
-      error: 'Failed to update pump sales. Please try again later.',
-    });
+    console.error("Server Error:", err); 
+    return res.status(500).json({ error: "Failed to process the request" });
   }
 };
-
-
-
-
-// exports.addPumpSales = async (req, res) => {
-//   try {
-//     const {
-//       attendence_id,
-//       pump_sale_amount,
-//       shift_sales_amount,
-//       dm_amount,
-//       advance_amount,
-//       credit_amount,
-//       total_online_payment_amount,
-//       pumpSales,
-//       cash_notes,
-//       cash_notes_advance,
-//       credit_data,
-//       online_payments,
-//     } = req.body;
-
-//     if (!attendence_id) {
-//       return res.status(400).json({
-//         statuscode: 400,
-//         message: "Attendance ID is required",
-//       });
-//     }
-
-//     const client = await pool.connect();
-//     try {
-//       await client.query("BEGIN");
-
-//       // Check if the attendance_id already exists in pumpsales_shift_data
-//       const existingShiftQuery = `SELECT pumpsale_shift_id FROM pumpsales_shift_data WHERE attendence_id = $1`;
-//       const existingShift = await client.query(existingShiftQuery, [attendence_id]);
-//       let pumpsale_shift_id;
-
-//       if (existingShift.rows.length > 0) {
-//         await client.query("ROLLBACK");
-//         return res.status(404).json({
-//           statuscode: 404,
-//           message: "Already data added to that field",
-//         });
-//       }
-
-//       // Insert new shift sales data
-//       const shiftQuery = `
-//         INSERT INTO pumpsales_shift_data (
-//           attendence_id, pump_sale_amount, shift_sales_amount, dm_amount, advance_amount, credit_amount, total_online_payment_amount,
-//           pump_sale_2000, pump_sale_500, pump_sale_200, pump_sale_100, pump_sale_50, 
-//           pump_sale_20, pump_sale_10, pump_sale_5, pump_sale_2, pump_sale_1,
-//           advance_2000, advance_500, advance_200, advance_100, advance_50, 
-//           advance_20, advance_10, advance_5, advance_2, advance_1
-//         ) VALUES (
-//           $1, $2, $3, $4, $5, $6, $7,
-//           $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
-//           $18, $19, $20, $21, $22, $23, $24, $25, $26, $27
-//         ) RETURNING pumpsale_shift_id;
-//       `;
-
-//       const shiftValues = [
-//         attendence_id,
-//         pump_sale_amount || "0",
-//         shift_sales_amount || "0",
-//         dm_amount || "0",
-//         advance_amount || "0",
-//         credit_amount || "0",
-//         total_online_payment_amount || "0",
-//         cash_notes?.["pump_sale_2000"] || "0",
-//         cash_notes?.["pump_sale_500"] || "0",
-//         cash_notes?.["pump_sale_200"] || "0",
-//         cash_notes?.["pump_sale_100"] || "0",
-//         cash_notes?.["pump_sale_50"] || "0",
-//         cash_notes?.["pump_sale_20"] || "0",
-//         cash_notes?.["pump_sale_10"] || "0",
-//         cash_notes?.["pump_sale_5"] || "0",
-//         cash_notes?.["pump_sale_2"] || "0",
-//         cash_notes?.["pump_sale_1"] || "0",
-//         cash_notes_advance?.["advance_2000"] || "0",
-//         cash_notes_advance?.["advance_500"] || "0",
-//         cash_notes_advance?.["advance_200"] || "0",
-//         cash_notes_advance?.["advance_100"] || "0",
-//         cash_notes_advance?.["advance_50"] || "0",
-//         cash_notes_advance?.["advance_20"] || "0",
-//         cash_notes_advance?.["advance_10"] || "0",
-//         cash_notes_advance?.["advance_5"] || "0",
-//         cash_notes_advance?.["advance_2"] || "0",
-//         cash_notes_advance?.["advance_1"] || "0",
-//       ];
-
-//       const shiftResult = await client.query(shiftQuery, shiftValues);
-//       pumpsale_shift_id = shiftResult.rows[0].pumpsale_shift_id;
-
-//       // Update pump sales data
-//       if (Array.isArray(pumpSales)) {
-//         for (const pumpSale of pumpSales) {
-//           const { pump_sale_id, fuel_type, cmr, omr, amount, sale, guns ,res_id} = pumpSale;
-//           if (!pump_sale_id) continue;
-
-//           const updateQuery = `
-//             UPDATE pump_sales
-//             SET cmr = $1, omr = $2, amount = $3, sale = $4, fuel_type = $5, guns = $6,res_id=$7
-//             WHERE pump_sale_id = $8;
-//           `;
-//           await client.query(updateQuery, [cmr, omr, amount, sale, fuel_type, guns,res_id, pump_sale_id]);
-//         }
-//       }
-
-//       // Validate and process uploaded files
-//       const billRecipts = Array.isArray(req.files) ? req.files.map(file => `/uploads/${file.filename}`) : [];
-      
-//       // Attach the first uploaded file to credit_data (assuming one file per entry)
-//       if (Array.isArray(credit_data)) {
-//         credit_data.forEach((credit, index) => {
-//           credit.bill_recipt = billRecipts[index] || null;
-//         });
-//       }
-//        // Insert credit data
-//       if (Array.isArray(credit_data)) {
-//         for (const credit of credit_data) {
-//           const { bill_no, customer_name, product, quantity, rsp,cost, bill_recipt } = credit;
-
-//           const creditQuery = `
-//             INSERT INTO credit_data (bill_no, customer_name, product, quantity, rsp,cost,  bill_recipt,pumpsale_shift_id)
-//             VALUES ($1, $2, $3, $4, $5, $6, $7,$8);
-//           `;
-//           await client.query(creditQuery, [bill_no, customer_name, product, quantity, rsp, cost,bill_recipt, pumpsale_shift_id]);
-//         }
-//       }
- 
-//       // Insert online payment data
-//       if (Array.isArray(online_payments)) {
-//         for (const payment of online_payments) {
-//           const { online_payment_amount, online_payment_type } = payment;
-
-//           const paymentQuery = `
-//             INSERT INTO online_payment_data (online_payment_amount, online_payment_type, pumpsale_shift_id)
-//             VALUES ($1, $2, $3);
-//           `;
-//           await client.query(paymentQuery, [online_payment_amount, online_payment_type, pumpsale_shift_id]);
-//         }
-//       }
-
-//       await client.query("COMMIT");
-
-//       return res.status(200).json({
-//         statuscode: 200,
-//         message: "Pump sales and shift data updated successfully",
-//       });
-//     } catch (error) {
-//       await client.query("ROLLBACK");
-   
-//       return res.status(500).json({ error: "Failed to update pump sales and shift data" });
-//     } finally {
-//       client.release();
-//     }
-//   } catch (err) {
-    
-//     return res.status(500).json({ error: "Failed to process the request" });
-//   }
-// };
 
 
 
