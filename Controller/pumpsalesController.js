@@ -224,6 +224,7 @@ exports.getPumpDetailsbydate = async (req, res) => {
 exports.addPumpSales = async (req, res) => {
   try {
     const {
+      pumpSales, // Array of pump sales
       attendence_id,
       pump_sale_amount,
       shift_sales_amount,
@@ -231,36 +232,28 @@ exports.addPumpSales = async (req, res) => {
       advance_amount,
       credit_amount,
       total_online_payment_amount,
-      pumpSales,
       cash_notes,
       cash_notes_advance,
       credit_data,
-      online_payments,
+      online_payments
     } = req.body;
 
     if (!attendence_id) {
-      return res.status(400).json({
-        statuscode: 400,
-        message: "Attendance ID is required",
-      });
+      return res.status(400).json({ statusCode: 400, message: "Attendance ID is required" });
     }
 
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
 
-      // Check if the attendance_id already exists in pumpsales_shift_data
+      // Check if attendance_id already exists in pumpsales_shift_data
       const existingShiftQuery = `SELECT pumpsale_shift_id FROM pumpsales_shift_data WHERE attendence_id = $1`;
       const existingShift = await client.query(existingShiftQuery, [attendence_id]);
-      let pumpsale_shift_id;
 
       if (existingShift.rows.length > 0) {
-        console.error("Transaction Error:", error);
+        console.error("Transaction Error: Data already exists for this attendance ID.");
         await client.query("ROLLBACK");
-        return res.status(404).json({
-          statuscode: 404,
-          message: "Already data added to that field",
-        });
+        return res.status(400).json({ statusCode: 400, message: "Data already exists for this attendance ID." });
       }
 
       // Insert new shift sales data
@@ -309,76 +302,75 @@ exports.addPumpSales = async (req, res) => {
       ];
 
       const shiftResult = await client.query(shiftQuery, shiftValues);
-      pumpsale_shift_id = shiftResult.rows[0].pumpsale_shift_id;
+      const pumpsale_shift_id = shiftResult.rows[0].pumpsale_shift_id;
 
-      // Update pump sales data
-      if (Array.isArray(pumpSales)) {
-        for (const pumpSale of pumpSales) {
-          const { pump_sale_id, fuel_type, cmr, omr, amount, sale, guns ,res_id} = pumpSale;
-          if (!pump_sale_id) continue;
-
-          const updateQuery = `
+      // Batch update pump sales
+      if (Array.isArray(pumpSales) && pumpSales.length > 0) {
+        const updateQueries = pumpSales.map(({ pump_sale_id, cmr, omr, res_id, amount, sale, fuel_type, guns }) => ({
+          query: `
             UPDATE pump_sales
-            SET cmr = $1, omr = $2, amount = $3, sale = $4, fuel_type = $5, guns = $6,res_id=$7
+            SET cmr = $1, omr = $2, amount = $3, sale = $4, fuel_type = $5, guns = $6, res_id = $7
             WHERE pump_sale_id = $8;
-          `;
-          await client.query(updateQuery, [cmr, omr, amount, sale, fuel_type, guns,res_id, pump_sale_id]);
+          `,
+          values: [cmr || 0, omr || 0, amount || 0, sale || 0, fuel_type || '', guns || '', res_id || '', pump_sale_id]
+        }));
+
+        for (const { query, values } of updateQueries) {
+          await client.query(query, values);
         }
       }
 
-      // Validate and process uploaded files
-      const billRecipts = Array.isArray(req.files) ? req.files.map(file => `/uploads/${file.filename}`) : [];
-      
-      // Attach the first uploaded file to credit_data (assuming one file per entry)
+      // Process file uploads for credit_data
+      const billReceipts = Array.isArray(req.files) ? req.files.map(file => `/uploads/${file.filename}`) : [];
       if (Array.isArray(credit_data)) {
         credit_data.forEach((credit, index) => {
-          credit.bill_recipt = billRecipts[index] || null;
+          credit.bill_recipt = billReceipts[index] || null;
         });
       }
-       // Insert credit data
-      if (Array.isArray(credit_data)) {
-        for (const credit of credit_data) {
-          const { bill_no, customer_name, product, quantity, rsp,cost, bill_recipt } = credit;
 
-          const creditQuery = `
-            INSERT INTO credit_data (bill_no, customer_name, product, quantity, rsp,cost,  bill_recipt,pumpsale_shift_id)
-            VALUES ($1, $2, $3, $4, $5, $6, $7,$8);
-          `;
-          await client.query(creditQuery, [bill_no, customer_name, product, quantity, rsp, cost,bill_recipt, pumpsale_shift_id]);
-        }
+      // Batch insert credit data
+      if (Array.isArray(credit_data) && credit_data.length > 0) {
+        const creditQuery = `
+          INSERT INTO credit_data (bill_no, customer_name, product, quantity, rsp, cost, bill_recipt, pumpsale_shift_id)
+          VALUES ${credit_data.map((_, i) => `($${i * 8 + 1}, $${i * 8 + 2}, $${i * 8 + 3}, $${i * 8 + 4}, $${i * 8 + 5}, $${i * 8 + 6}, $${i * 8 + 7}, $${i * 8 + 8})`).join(", ")}
+        `;
+        const creditValues = credit_data.flatMap(({ bill_no, customer_name, product, quantity, rsp, cost, bill_recipt }) => [
+          bill_no, customer_name, product, quantity, rsp, cost, bill_recipt, pumpsale_shift_id
+        ]);
+
+        await client.query(creditQuery, creditValues);
       }
- 
-      // Insert online payment data
-      if (Array.isArray(online_payments)) {
-        for (const payment of online_payments) {
-          const { online_payment_amount, online_payment_type } = payment;
 
-          const paymentQuery = `
-            INSERT INTO online_payment_data (online_payment_amount, online_payment_type, pumpsale_shift_id)
-            VALUES ($1, $2, $3);
-          `;
-          await client.query(paymentQuery, [online_payment_amount, online_payment_type, pumpsale_shift_id]);
-        }
+      // Batch insert online payments
+      if (Array.isArray(online_payments) && online_payments.length > 0) {
+        const paymentQuery = `
+          INSERT INTO online_payment_data (online_payment_amount, online_payment_type, pumpsale_shift_id)
+          VALUES ${online_payments.map((_, i) => `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`).join(", ")}
+        `;
+        const paymentValues = online_payments.flatMap(({ online_payment_amount, online_payment_type }) => [
+          online_payment_amount, online_payment_type, pumpsale_shift_id
+        ]);
+
+        await client.query(paymentQuery, paymentValues);
       }
 
       await client.query("COMMIT");
 
-      return res.status(200).json({
-        statuscode: 200,
-        message: "Pump sales and shift data updated successfully",
-      });
+      res.status(200).json({ statusCode: 200, message: "Pump sales and shift data updated successfully." });
+
     } catch (error) {
       await client.query("ROLLBACK");
-      console.error("Server Error:", err); 
-      return res.status(500).json({ error: "Failed to update pump sales and shift data" });
+      console.error("Server Error:", error);
+      res.status(500).json({ error: "Failed to update pump sales and shift data." });
     } finally {
       client.release();
     }
   } catch (err) {
-    console.error("Server Error:", err); 
-    return res.status(500).json({ error: "Failed to process the request" });
+    console.error("Server Error:", err);
+    res.status(500).json({ error: "Failed to process the request." });
   }
 };
+
 
 
 
