@@ -260,14 +260,14 @@ exports.addPumpSales = async (req, res) => {
       const shiftQuery = `
         INSERT INTO pumpsales_shift_data (
           attendence_id, pump_sale_amount, shift_sales_amount, dm_amount, advance_amount, credit_amount, total_online_payment_amount,
-          pump_sale_2000, pump_sale_500, pump_sale_200, pump_sale_100, pump_sale_50, 
+          pump_sale_500, pump_sale_200, pump_sale_100, pump_sale_50, 
           pump_sale_20, pump_sale_10, pump_sale_5, pump_sale_2, pump_sale_1,
-          advance_2000, advance_500, advance_200, advance_100, advance_50, 
+           advance_500, advance_200, advance_100, advance_50, 
           advance_20, advance_10, advance_5, advance_2, advance_1
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7,
           $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
-          $18, $19, $20, $21, $22, $23, $24, $25, $26, $27
+          $18, $19, $20, $21, $22, $23, $24, $25
         ) RETURNING pumpsale_shift_id;
       `;
 
@@ -279,7 +279,6 @@ exports.addPumpSales = async (req, res) => {
         advance_amount || "0",
         credit_amount || "0",
         total_online_payment_amount || "0",
-        cash_notes?.["pump_sale_2000"] || "0",
         cash_notes?.["pump_sale_500"] || "0",
         cash_notes?.["pump_sale_200"] || "0",
         cash_notes?.["pump_sale_100"] || "0",
@@ -289,7 +288,6 @@ exports.addPumpSales = async (req, res) => {
         cash_notes?.["pump_sale_5"] || "0",
         cash_notes?.["pump_sale_2"] || "0",
         cash_notes?.["pump_sale_1"] || "0",
-        cash_notes_advance?.["advance_2000"] || "0",
         cash_notes_advance?.["advance_500"] || "0",
         cash_notes_advance?.["advance_200"] || "0",
         cash_notes_advance?.["advance_100"] || "0",
