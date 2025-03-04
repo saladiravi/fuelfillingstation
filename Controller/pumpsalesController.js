@@ -235,7 +235,13 @@ exports.addPumpSales = async (req, res) => {
       cash_notes,
       cash_notes_advance,
       credit_data,
-      online_payments
+      
+      cash_amount,
+      upi,
+      pos,
+      alp,
+      company_account,
+      short_amount
     } = req.body;
 
     if (!attendence_id) {
@@ -297,6 +303,12 @@ exports.addPumpSales = async (req, res) => {
         cash_notes_advance?.["advance_5"] || "0",
         cash_notes_advance?.["advance_2"] || "0",
         cash_notes_advance?.["advance_1"] || "0",
+        cash_amount || "0",
+        upi || "0",
+        pos || "0",
+        alp || "0",
+        company_account ||  "0",
+        short_amount || "0",
       ];
 
       const shiftResult = await client.query(shiftQuery, shiftValues);
