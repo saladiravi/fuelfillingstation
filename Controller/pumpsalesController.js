@@ -263,11 +263,11 @@ exports.addPumpSales = async (req, res) => {
           pump_sale_500, pump_sale_200, pump_sale_100, pump_sale_50, 
           pump_sale_20, pump_sale_10, pump_sale_5, pump_sale_2, pump_sale_1,
            advance_500, advance_200, advance_100, advance_50, 
-          advance_20, advance_10, advance_5, advance_2, advance_1
+          advance_20, advance_10, advance_5, advance_2, advance_1,cash_amount,upi,pos,alp,company_account,short_amount
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7,
           $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
-          $18, $19, $20, $21, $22, $23, $24, $25
+          $18, $19, $20, $21, $22, $23, $24, $25,$26,$27,$28,$29,$30,$31
         ) RETURNING pumpsale_shift_id;
       `;
 
@@ -340,17 +340,17 @@ exports.addPumpSales = async (req, res) => {
       }
 
       // Batch insert online payments
-      if (Array.isArray(online_payments) && online_payments.length > 0) {
-        const paymentQuery = `
-          INSERT INTO online_payment_data (online_payment_amount, online_payment_type, pumpsale_shift_id)
-          VALUES ${online_payments.map((_, i) => `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`).join(", ")}
-        `;
-        const paymentValues = online_payments.flatMap(({ online_payment_amount, online_payment_type }) => [
-          online_payment_amount, online_payment_type, pumpsale_shift_id
-        ]);
+      // if (Array.isArray(online_payments) && online_payments.length > 0) {
+      //   const paymentQuery = `
+      //     INSERT INTO online_payment_data (online_payment_amount, online_payment_type, pumpsale_shift_id)
+      //     VALUES ${online_payments.map((_, i) => `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`).join(", ")}
+      //   `;
+      //   const paymentValues = online_payments.flatMap(({ online_payment_amount, online_payment_type }) => [
+      //     online_payment_amount, online_payment_type, pumpsale_shift_id
+      //   ]);
 
-        await client.query(paymentQuery, paymentValues);
-      }
+      //   await client.query(paymentQuery, paymentValues);
+      // }
 
       await client.query("COMMIT");
 
