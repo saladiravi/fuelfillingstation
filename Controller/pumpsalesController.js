@@ -508,20 +508,23 @@ exports.getPumpSalesanydate = async (req, res) => {
 
     // Query to fetch pump sales and shift data (without credit & online payment)
     const salesQuery = `
-      SELECT 
+          SELECT DISTINCT ON (ps.pump_sale_id)
         ps.pump_sale_id, ps.bay_side, ps.fuel_type, ps.omr, ps.cmr, ps.sale, ps.res_id, ps.amount,
         a."pumpNumber", a.operatorshift, e."employeeName", ps.created_at, e.employee_id,
         p.pump_sale_amount, p.shift_sales_amount, p.total_online_payment_amount, p.credit_amount,
-        p.pumpsale_shift_id,p.pump_sale_500,p.pump_sale_200,p.pump_sale_100,p.pump_sale_50,p.pump_sale_20,p.pump_sale_10,p.pump_sale_5,
-        p.pump_sale_2,p.pump_sale_1,p.advance_amount,p.advance_500,p.advance_200,p.advance_100,p.advance_50,p.advance_20,
-        p.advance_10,p.advance_5,p.advance_2,p.advance_1,p.cash_amount,p.upi,p.pos,p.alp,p.company_account,p.short_amount
+        p.pumpsale_shift_id, p.pump_sale_500, p.pump_sale_200, p.pump_sale_100, p.pump_sale_50, 
+        p.pump_sale_20, p.pump_sale_10, p.pump_sale_5, p.pump_sale_2, p.pump_sale_1, 
+        p.advance_amount, p.advance_500, p.advance_200, p.advance_100, p.advance_50, 
+        p.advance_20, p.advance_10, p.advance_5, p.advance_2, p.advance_1, 
+        p.cash_amount, p.upi, p.pos, p.alp, p.company_account, p.short_amount
       FROM pump_sales ps
       JOIN attendence a ON ps.attendence_id = a.attendence_id
       JOIN employees e ON a.operator_name = e.employee_id
       JOIN pumpsales_shift_data p ON ps.attendence_id = a.attendence_id
       WHERE ps.created_at::date = $1 
       AND e."employeeName" = $2
-      ORDER BY e.employee_id, ps.created_at DESC
+      ORDER BY ps.pump_sale_id, ps.created_at DESC;
+
     `;
 
     const salesResult = await pool.query(salesQuery, [created_at, operatorName]);
@@ -594,15 +597,38 @@ exports.getPumpSalesanydate = async (req, res) => {
       }
 
       // Add sale details
-      existingOperator.salesDetails.push({
-        baySide: sale.bay_side,
-        fuelType: sale.fuel_type,
-        omr: sale.omr,
-        cmr: sale.cmr,
-        sale: sale.sale,
-        amount: sale.amount,
-        res_id: sale.res_id
-      });
+      // existingOperator.salesDetails.push({
+      //   baySide: sale.bay_side,
+      //   fuelType: sale.fuel_type,
+      //   omr: sale.omr,
+      //   cmr: sale.cmr,
+      //   sale: sale.sale,
+      //   amount: sale.amount,
+      //   res_id: sale.res_id
+      // });
+      // Add sale details only if not already present
+const saleExists = existingOperator.salesDetails.some(
+  (detail) =>
+    detail.baySide === sale.bay_side &&
+    detail.fuelType === sale.fuel_type &&
+    detail.omr === sale.omr &&
+    detail.cmr === sale.cmr &&
+    detail.sale === sale.sale &&
+    detail.amount === sale.amount &&
+    detail.res_id === sale.res_id
+);
+
+if (!saleExists) {
+  existingOperator.salesDetails.push({
+    baySide: sale.bay_side,
+    fuelType: sale.fuel_type,
+    omr: sale.omr,
+    cmr: sale.cmr,
+    sale: sale.sale,
+    amount: sale.amount,
+    res_id: sale.res_id,
+  });
+}
 
       // Add credit data (if exists)
       existingOperator.creditdata = creditResult.rows;
