@@ -420,84 +420,9 @@ exports.getTodaysPumpSales = async (req, res) => {
 
 
 //old code 
-exports.getPumpSalesanydate = async (req, res) => {
-  try {
-    const { created_at, operatorName } = req.body;   
-
-    if (!created_at || !operatorName) {
-      return res.status(400).json({
-        statuscode: 400,
-        message: "Date and operatorName parameters are required",
-      });
-    }
-
-    const body = `
-      SELECT ps.pump_sale_id, ps.bay_side, ps.fuel_type, ps.omr,ps.res_id, ps.cmr, ps.sale, ps.amount,
-             a."pumpNumber", a.operatorshift, e."employeeName", ps.created_at, e.employee_id
-      FROM pump_sales ps
-      JOIN attendence a ON ps.attendence_id = a.attendence_id
-      JOIN employees e ON a.operator_name = e.employee_id
-      WHERE ps.created_at::date = $1 AND e."employeeName" = $2
-      ORDER BY e.employee_id, ps.created_at DESC
-    `;
-
-    const result = await pool.query(body, [created_at, operatorName]);
-
-    if (result.rows.length > 0) {
-      const salesData = [];
-
-      // Loop through the result to organize data
-      result.rows.forEach((sale) => {
-        let existingOperator = salesData.find(
-          (data) => data.operatorName === sale.employeeName && data.pumpNumber === sale.pumpNumber
-        );
-
-        if (!existingOperator) {
-          existingOperator = {
-            date: created_at,
-            operatorName: sale.employeeName,
-            pumpNumber: sale.pumpNumber,
-            operatorShift: sale.operatorshift,
-            salesDetails: []
-          };
-
-          salesData.push(existingOperator);
-        }
-
-        existingOperator.salesDetails.push({
-          baySide: sale.bay_side,
-          fuelType: sale.fuel_type,
-          omr: sale.omr,
-          cmr: sale.cmr,
-          sale: sale.sale,
-          amount: sale.amount,
-          res_id:sale.res_id
-        });
-      });
-
-      return res.status(200).json({
-        statuscode: 200,
-        message: `Pump sales fetched successfully for ${created_at} and operator ${operatorName}`,
-        sales: salesData
-      });
-    } else {
-      return res.status(404).json({
-        statuscode: 404,
-        message: `No pump sales found for ${created_at} and operator ${operatorName}`,
-        sales: []
-      });
-    }
-  } catch (err) {
-
-    res.status(500).json({ error: "Failed to fetch pump sales" });
-  }
-};
-
-
-
 // exports.getPumpSalesanydate = async (req, res) => {
 //   try {
-//     const { created_at, operatorName } = req.body;
+//     const { created_at, operatorName } = req.body;   
 
 //     if (!created_at || !operatorName) {
 //       return res.status(400).json({
@@ -506,105 +431,194 @@ exports.getPumpSalesanydate = async (req, res) => {
 //       });
 //     }
 
-//     // Query to fetch pump sales and shift data (without credit & online payment)
-//     const salesQuery = `
-//       SELECT 
-//         ps.pump_sale_id, ps.bay_side, ps.fuel_type, ps.omr, ps.cmr, ps.sale, ps.res_id, ps.amount,
-//         a."pumpNumber", a.operatorshift, e."employeeName", ps.created_at, e.employee_id,
-//         p.pump_sale_amount, p.shift_sales_amount, p.total_online_payment_amount, p.credit_amount,
-//         p.pumpsale_shift_id -- This will be used to fetch related credit and online payments
+//     const body = `
+//       SELECT ps.pump_sale_id, ps.bay_side, ps.fuel_type, ps.omr,ps.res_id, ps.cmr, ps.sale, ps.amount,
+//              a."pumpNumber", a.operatorshift, e."employeeName", ps.created_at, e.employee_id
 //       FROM pump_sales ps
 //       JOIN attendence a ON ps.attendence_id = a.attendence_id
 //       JOIN employees e ON a.operator_name = e.employee_id
-//       JOIN pumpsales_shift_data p ON ps.attendence_id = a.attendence_id
-//       WHERE ps.created_at::date = $1 
-//       AND e."employeeName" = $2
+//       WHERE ps.created_at::date = $1 AND e."employeeName" = $2
 //       ORDER BY e.employee_id, ps.created_at DESC
 //     `;
 
-//     const salesResult = await pool.query(salesQuery, [created_at, operatorName]);
-    
-//     if (salesResult.rows.length === 0) {
+//     const result = await pool.query(body, [created_at, operatorName]);
+
+//     if (result.rows.length > 0) {
+//       const salesData = [];
+
+     
+//       result.rows.forEach((sale) => {
+//         let existingOperator = salesData.find(
+//           (data) => data.operatorName === sale.employeeName && data.pumpNumber === sale.pumpNumber
+//         );
+
+//         if (!existingOperator) {
+//           existingOperator = {
+//             date: created_at,
+//             operatorName: sale.employeeName,
+//             pumpNumber: sale.pumpNumber,
+//             operatorShift: sale.operatorshift,
+//             salesDetails: []
+//           };
+
+//           salesData.push(existingOperator);
+//         }
+
+//         existingOperator.salesDetails.push({
+//           baySide: sale.bay_side,
+//           fuelType: sale.fuel_type,
+//           omr: sale.omr,
+//           cmr: sale.cmr,
+//           sale: sale.sale,
+//           amount: sale.amount,
+//           res_id:sale.res_id
+//         });
+//       });
+
+//       return res.status(200).json({
+//         statuscode: 200,
+//         message: `Pump sales fetched successfully for ${created_at} and operator ${operatorName}`,
+//         sales: salesData
+//       });
+//     } else {
 //       return res.status(404).json({
 //         statuscode: 404,
 //         message: `No pump sales found for ${created_at} and operator ${operatorName}`,
 //         sales: []
 //       });
 //     }
-
-//     let salesData = [];
-
-     
-//     for (const sale of salesResult.rows) {
-//       const { pumpsale_shift_id } = sale;
-
-     
-//       const creditQuery = `
-//         SELECT bill_no, customer_name, product, quantity, rsp, bill_recipt, cost 
-//         FROM credit_data 
-//         WHERE pumpsale_shift_id = $1
-//       `;
-//       const creditResult = await pool.query(creditQuery, [pumpsale_shift_id]);
-
-       
-//       const onlinePaymentQuery = `
-//         SELECT online_payment_amount, online_payment_type 
-//         FROM online_payment_data 
-//         WHERE pumpsale_shift_id = $1
-//       `;
-//       const onlinePaymentResult = await pool.query(onlinePaymentQuery, [pumpsale_shift_id]);
-
-//       let existingOperator = salesData.find(
-//         (data) => data.operatorName === sale.employeeName && data.pumpNumber === sale.pumpNumber
-//       );
-
-//       if (!existingOperator) {
-//         existingOperator = {
-//           date: created_at,
-//           operatorName: sale.employeeName,
-//           pumpNumber: sale.pumpNumber,
-//           operatorShift: sale.operatorshift,
-//           pump_sale_amount: sale.pump_sale_amount,
-//           shift_sales_amount: sale.shift_sales_amount,
-//           total_online_payment_amount: sale.total_online_payment_amount,
-//           credit_amount: sale.credit_amount,
-//           salesDetails: [],
-//           onlinepayment: [],
-//           creditdata: [],
-//         };
-
-//         salesData.push(existingOperator);
-//       }
-
-//       // Add sale details
-//       existingOperator.salesDetails.push({
-//         baySide: sale.bay_side,
-//         fuelType: sale.fuel_type,
-//         omr: sale.omr,
-//         cmr: sale.cmr,
-//         sale: sale.sale,
-//         amount: sale.amount,
-//         res_id: sale.res_id
-//       });
-
-//       // Add credit data (if exists)
-//       existingOperator.creditdata = creditResult.rows;
-
-//       // Add online payment data (if exists)
-//       existingOperator.onlinepayment = onlinePaymentResult.rows;
-//     }
-
-//     return res.status(200).json({
-//       statuscode: 200,
-//       message: `Pump sales fetched successfully for ${created_at} and operator ${operatorName}`,
-//       sales: salesData
-//     });
-
 //   } catch (err) {
-//     console.error("Error fetching pump sales by date and operator:", err);
+
 //     res.status(500).json({ error: "Failed to fetch pump sales" });
 //   }
 // };
+
+
+
+exports.getPumpSalesanydate = async (req, res) => {
+  try {
+    const { created_at, operatorName } = req.body;
+
+    if (!created_at || !operatorName) {
+      return res.status(400).json({
+        statuscode: 400,
+        message: "Date and operatorName parameters are required",
+      });
+    }
+
+    // Query to fetch pump sales and shift data (without credit & online payment)
+    const salesQuery = `
+      SELECT 
+        ps.pump_sale_id, ps.bay_side, ps.fuel_type, ps.omr, ps.cmr, ps.sale, ps.res_id, ps.amount,
+        a."pumpNumber", a.operatorshift, e."employeeName", ps.created_at, e.employee_id,
+        p.pump_sale_amount, p.shift_sales_amount, p.total_online_payment_amount, p.credit_amount,
+        p.pumpsale_shift_id,p.pump_sale_500,p.pump_sale_200,p.pump_sale_100,p.pump_sale_50,p.pump_sale_20,p.pump_sale_10,p.pump_sale_5,
+        p.pump_sale_2,p.pump_sale_1,p.advance_amount,p.advance_500,p.advance_200,p.advance_100,p.advance_50,p.advance_20,
+        p.advance_10,p.advance_5,p.advance_2,p.advance_1,p.cash_amount,p.upi,p.pos,p.alp,p.company_account,p.short_amount
+      FROM pump_sales ps
+      JOIN attendence a ON ps.attendence_id = a.attendence_id
+      JOIN employees e ON a.operator_name = e.employee_id
+      JOIN pumpsales_shift_data p ON ps.attendence_id = a.attendence_id
+      WHERE ps.created_at::date = $1 
+      AND e."employeeName" = $2
+      ORDER BY e.employee_id, ps.created_at DESC
+    `;
+
+    const salesResult = await pool.query(salesQuery, [created_at, operatorName]);
+    
+    if (salesResult.rows.length === 0) {
+      return res.status(404).json({
+        statuscode: 404,
+        message: `No pump sales found for ${created_at} and operator ${operatorName}`,
+        sales: []
+      });
+    }
+
+    let salesData = [];
+
+     
+    for (const sale of salesResult.rows) {
+      const { pumpsale_shift_id } = sale;
+
+     
+      const creditQuery = `
+        SELECT bill_no, customer_name, product, quantity, rsp, bill_recipt, cost 
+        FROM credit_data 
+        WHERE pumpsale_shift_id = $1
+      `;
+      const creditResult = await pool.query(creditQuery, [pumpsale_shift_id]);
+
+   
+      let existingOperator = salesData.find(
+        (data) => data.operatorName === sale.employeeName && data.pumpNumber === sale.pumpNumber
+      );
+ 
+      if (!existingOperator) {
+        existingOperator = {
+          date: created_at,
+          operatorName: sale.employeeName,
+          pumpNumber: sale.pumpNumber,
+          operatorShift: sale.operatorshift,
+          pump_sale_amount: sale.pump_sale_amount,
+          shift_sales_amount: sale.shift_sales_amount,
+          total_online_payment_amount: sale.total_online_payment_amount,
+          credit_amount: sale.credit_amount,
+          pump_sale_500:sale.pump_sale_500,
+          pump_sale_200:sale.pump_sale_200,
+          pump_sale_100:sale.pump_sale_100,
+          pump_sale_50:sale.pump_sale_50,
+          pump_sale_20:sale.pump_sale_20,
+          pump_sale_10:sale.pump_sale_10,
+          pump_sale_5:sale.pump_sale_5,
+          pump_sale_2:sale.pump_sale_2,
+          pump_sale_1:sale.pump_sale_1,
+          advance_500:sale.advance_500,
+          advance_200:sale.advance_200,
+          advance_100:sale.advance_100,
+          advance_50:sale.advance_50,
+          advance_20:sale.advance_20,
+          advance_10:sale.advance_10,
+          advance_5:sale.advance_5,
+          advance_2:sale.advance_2,
+          advance_1:sale.advance_1,
+          cash_amount:sale.cash_amount,
+          upi:sale.upi,
+          pos:sale.pos,
+          alp:sale.alp,
+          company_account:sale.company_account,
+          salesDetails: [],
+          creditdata: [],
+        };
+
+        salesData.push(existingOperator);
+      }
+
+      // Add sale details
+      existingOperator.salesDetails.push({
+        baySide: sale.bay_side,
+        fuelType: sale.fuel_type,
+        omr: sale.omr,
+        cmr: sale.cmr,
+        sale: sale.sale,
+        amount: sale.amount,
+        res_id: sale.res_id
+      });
+
+      // Add credit data (if exists)
+      existingOperator.creditdata = creditResult.rows;
+    }
+
+    return res.status(200).json({
+      statuscode: 200,
+      message: `Pump sales fetched successfully for ${created_at} and operator ${operatorName}`,
+      sales: salesData
+    });
+
+  } catch (err) {
+    console.error("Error fetching pump sales by date and operator:", err);
+    res.status(500).json({ error: "Failed to fetch pump sales" });
+  }
+};
 
 exports.getpumsaleSearchbydate = async (req, res) => {
   try {
