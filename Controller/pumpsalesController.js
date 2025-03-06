@@ -241,7 +241,8 @@ exports.addPumpSales = async (req, res) => {
       pos,
       alp,
       company_account,
-      short_amount
+      short_amount,
+      plus_amount
     } = req.body;
 
     if (!attendence_id) {
@@ -269,11 +270,11 @@ exports.addPumpSales = async (req, res) => {
           pump_sale_500, pump_sale_200, pump_sale_100, pump_sale_50, 
           pump_sale_20, pump_sale_10, pump_sale_5, pump_sale_2, pump_sale_1,
            advance_500, advance_200, advance_100, advance_50, 
-          advance_20, advance_10, advance_5, advance_2, advance_1,cash_amount,upi,pos,alp,company_account,short_amount
+          advance_20, advance_10, advance_5, advance_2, advance_1,cash_amount,upi,pos,alp,company_account,short_amount,plus_amount
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7,
           $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
-          $18, $19, $20, $21, $22, $23, $24, $25,$26,$27,$28,$29,$30,$31
+          $18, $19, $20, $21, $22, $23, $24, $25,$26,$27,$28,$29,$30,$31,$32
         ) RETURNING pumpsale_shift_id;
       `;
 
@@ -309,6 +310,7 @@ exports.addPumpSales = async (req, res) => {
         alp || "0",
         company_account ||  "0",
         short_amount || "0",
+        plus_amount || "0"
       ];
 
       const shiftResult = await client.query(shiftQuery, shiftValues);
@@ -351,18 +353,7 @@ exports.addPumpSales = async (req, res) => {
         await client.query(creditQuery, creditValues);
       }
 
-      // Batch insert online payments
-      // if (Array.isArray(online_payments) && online_payments.length > 0) {
-      //   const paymentQuery = `
-      //     INSERT INTO online_payment_data (online_payment_amount, online_payment_type, pumpsale_shift_id)
-      //     VALUES ${online_payments.map((_, i) => `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`).join(", ")}
-      //   `;
-      //   const paymentValues = online_payments.flatMap(({ online_payment_amount, online_payment_type }) => [
-      //     online_payment_amount, online_payment_type, pumpsale_shift_id
-      //   ]);
-
-      //   await client.query(paymentQuery, paymentValues);
-      // }
+     
 
       await client.query("COMMIT");
 
@@ -397,8 +388,7 @@ exports.getTodaysPumpSales = async (req, res) => {
     `;
 
     const result = await pool.query(query);
-    console.log('Filtered Pump Sales Result:', result.rows);
-
+    
     if (result.rows.length > 0) {
       res.status(200).json({
         statuscode: 200,
@@ -418,81 +408,7 @@ exports.getTodaysPumpSales = async (req, res) => {
   }
 };
 
-
-//old code 
-// exports.getPumpSalesanydate = async (req, res) => {
-//   try {
-//     const { created_at, operatorName } = req.body;   
-
-//     if (!created_at || !operatorName) {
-//       return res.status(400).json({
-//         statuscode: 400,
-//         message: "Date and operatorName parameters are required",
-//       });
-//     }
-
-//     const body = `
-//       SELECT ps.pump_sale_id, ps.bay_side, ps.fuel_type, ps.omr,ps.res_id, ps.cmr, ps.sale, ps.amount,
-//              a."pumpNumber", a.operatorshift, e."employeeName", ps.created_at, e.employee_id
-//       FROM pump_sales ps
-//       JOIN attendence a ON ps.attendence_id = a.attendence_id
-//       JOIN employees e ON a.operator_name = e.employee_id
-//       WHERE ps.created_at::date = $1 AND e."employeeName" = $2
-//       ORDER BY e.employee_id, ps.created_at DESC
-//     `;
-
-//     const result = await pool.query(body, [created_at, operatorName]);
-
-//     if (result.rows.length > 0) {
-//       const salesData = [];
-
-     
-//       result.rows.forEach((sale) => {
-//         let existingOperator = salesData.find(
-//           (data) => data.operatorName === sale.employeeName && data.pumpNumber === sale.pumpNumber
-//         );
-
-//         if (!existingOperator) {
-//           existingOperator = {
-//             date: created_at,
-//             operatorName: sale.employeeName,
-//             pumpNumber: sale.pumpNumber,
-//             operatorShift: sale.operatorshift,
-//             salesDetails: []
-//           };
-
-//           salesData.push(existingOperator);
-//         }
-
-//         existingOperator.salesDetails.push({
-//           baySide: sale.bay_side,
-//           fuelType: sale.fuel_type,
-//           omr: sale.omr,
-//           cmr: sale.cmr,
-//           sale: sale.sale,
-//           amount: sale.amount,
-//           res_id:sale.res_id
-//         });
-//       });
-
-//       return res.status(200).json({
-//         statuscode: 200,
-//         message: `Pump sales fetched successfully for ${created_at} and operator ${operatorName}`,
-//         sales: salesData
-//       });
-//     } else {
-//       return res.status(404).json({
-//         statuscode: 404,
-//         message: `No pump sales found for ${created_at} and operator ${operatorName}`,
-//         sales: []
-//       });
-//     }
-//   } catch (err) {
-
-//     res.status(500).json({ error: "Failed to fetch pump sales" });
-//   }
-// };
-
+ 
 
 
 exports.getPumpSalesanydate = async (req, res) => {
@@ -506,9 +422,9 @@ exports.getPumpSalesanydate = async (req, res) => {
       });
     }
 
-    // Query to fetch pump sales and shift data (without credit & online payment)
+    // Query to fetch pump sales and shift data
     const salesQuery = `
-          SELECT DISTINCT ON (ps.pump_sale_id)
+      SELECT DISTINCT ON (ps.pump_sale_id)
         ps.pump_sale_id, ps.bay_side, ps.fuel_type, ps.omr, ps.cmr, ps.sale, ps.res_id, ps.amount,
         a."pumpNumber", a.operatorshift, e."employeeName", ps.created_at, e.employee_id,
         p.pump_sale_amount, p.shift_sales_amount, p.total_online_payment_amount, p.credit_amount,
@@ -516,19 +432,18 @@ exports.getPumpSalesanydate = async (req, res) => {
         p.pump_sale_20, p.pump_sale_10, p.pump_sale_5, p.pump_sale_2, p.pump_sale_1, 
         p.advance_amount, p.advance_500, p.advance_200, p.advance_100, p.advance_50, 
         p.advance_20, p.advance_10, p.advance_5, p.advance_2, p.advance_1, 
-        p.cash_amount, p.upi, p.pos, p.alp, p.company_account, p.short_amount
+        p.cash_amount, p.upi, p.pos, p.alp, p.company_account, p.short_amount,p.plus_amount
       FROM pump_sales ps
       JOIN attendence a ON ps.attendence_id = a.attendence_id
       JOIN employees e ON a.operator_name = e.employee_id
-      JOIN pumpsales_shift_data p ON ps.attendence_id = a.attendence_id
+      INNER JOIN pumpsales_shift_data p ON ps.attendence_id = p.attendence_id
       WHERE ps.created_at::date = $1 
       AND e."employeeName" = $2
       ORDER BY ps.pump_sale_id, ps.created_at DESC;
-
     `;
 
     const salesResult = await pool.query(salesQuery, [created_at, operatorName]);
-    
+ 
     if (salesResult.rows.length === 0) {
       return res.status(404).json({
         statuscode: 404,
@@ -539,23 +454,22 @@ exports.getPumpSalesanydate = async (req, res) => {
 
     let salesData = [];
 
-     
     for (const sale of salesResult.rows) {
       const { pumpsale_shift_id } = sale;
-
-     
+ 
+      // Fetch credit data for the shift
       const creditQuery = `
         SELECT bill_no, customer_name, product, quantity, rsp, bill_recipt, cost 
         FROM credit_data 
         WHERE pumpsale_shift_id = $1
       `;
       const creditResult = await pool.query(creditQuery, [pumpsale_shift_id]);
-
-   
+     
+      // Check if operator data already exists in salesData
       let existingOperator = salesData.find(
         (data) => data.operatorName === sale.employeeName && data.pumpNumber === sale.pumpNumber
       );
- 
+
       if (!existingOperator) {
         existingOperator = {
           date: created_at,
@@ -566,29 +480,30 @@ exports.getPumpSalesanydate = async (req, res) => {
           shift_sales_amount: sale.shift_sales_amount,
           total_online_payment_amount: sale.total_online_payment_amount,
           credit_amount: sale.credit_amount,
-          pump_sale_500:sale.pump_sale_500,
-          pump_sale_200:sale.pump_sale_200,
-          pump_sale_100:sale.pump_sale_100,
-          pump_sale_50:sale.pump_sale_50,
-          pump_sale_20:sale.pump_sale_20,
-          pump_sale_10:sale.pump_sale_10,
-          pump_sale_5:sale.pump_sale_5,
-          pump_sale_2:sale.pump_sale_2,
-          pump_sale_1:sale.pump_sale_1,
-          advance_500:sale.advance_500,
-          advance_200:sale.advance_200,
-          advance_100:sale.advance_100,
-          advance_50:sale.advance_50,
-          advance_20:sale.advance_20,
-          advance_10:sale.advance_10,
-          advance_5:sale.advance_5,
-          advance_2:sale.advance_2,
-          advance_1:sale.advance_1,
-          cash_amount:sale.cash_amount,
-          upi:sale.upi,
-          pos:sale.pos,
-          alp:sale.alp,
-          company_account:sale.company_account,
+          pump_sale_500: sale.pump_sale_500,
+          pump_sale_200: sale.pump_sale_200,
+          pump_sale_100: sale.pump_sale_100,
+          pump_sale_50: sale.pump_sale_50,
+          pump_sale_20: sale.pump_sale_20,
+          pump_sale_10: sale.pump_sale_10,
+          pump_sale_5: sale.pump_sale_5,
+          pump_sale_2: sale.pump_sale_2,
+          pump_sale_1: sale.pump_sale_1,
+          advance_500: sale.advance_500,
+          advance_200: sale.advance_200,
+          advance_100: sale.advance_100,
+          advance_50: sale.advance_50,
+          advance_20: sale.advance_20,
+          advance_10: sale.advance_10,
+          advance_5: sale.advance_5,
+          advance_2: sale.advance_2,
+          advance_1: sale.advance_1,
+          cash_amount: sale.cash_amount,
+          upi: sale.upi,
+          pos: sale.pos,
+          alp: sale.alp,
+          plus_amount:sale.plus_amount,
+          company_account: sale.company_account,
           salesDetails: [],
           creditdata: [],
         };
@@ -596,41 +511,25 @@ exports.getPumpSalesanydate = async (req, res) => {
         salesData.push(existingOperator);
       }
 
-      // Add sale details
-      // existingOperator.salesDetails.push({
-      //   baySide: sale.bay_side,
-      //   fuelType: sale.fuel_type,
-      //   omr: sale.omr,
-      //   cmr: sale.cmr,
-      //   sale: sale.sale,
-      //   amount: sale.amount,
-      //   res_id: sale.res_id
-      // });
-      // Add sale details only if not already present
-const saleExists = existingOperator.salesDetails.some(
-  (detail) =>
-    detail.baySide === sale.bay_side &&
-    detail.fuelType === sale.fuel_type &&
-    detail.omr === sale.omr &&
-    detail.cmr === sale.cmr &&
-    detail.sale === sale.sale &&
-    detail.amount === sale.amount &&
-    detail.res_id === sale.res_id
-);
+      // Check if this sale record already exists in salesDetails
+      const saleExists = existingOperator.salesDetails.some(
+        (detail) => detail.pumpSaleId === sale.pump_sale_id
+      );
 
-if (!saleExists) {
-  existingOperator.salesDetails.push({
-    baySide: sale.bay_side,
-    fuelType: sale.fuel_type,
-    omr: sale.omr,
-    cmr: sale.cmr,
-    sale: sale.sale,
-    amount: sale.amount,
-    res_id: sale.res_id,
-  });
-}
+      if (!saleExists) {
+        existingOperator.salesDetails.push({
+          pumpSaleId: sale.pump_sale_id,
+          baySide: sale.bay_side,
+          fuelType: sale.fuel_type,
+          omr: sale.omr,
+          cmr: sale.cmr,
+          sale: sale.sale,
+          amount: sale.amount,
+          res_id: sale.res_id,
+        });
+      }
 
-      // Add credit data (if exists)
+      // Add credit data
       existingOperator.creditdata = creditResult.rows;
     }
 
@@ -641,10 +540,11 @@ if (!saleExists) {
     });
 
   } catch (err) {
-    console.error("Error fetching pump sales by date and operator:", err);
+   
     res.status(500).json({ error: "Failed to fetch pump sales" });
   }
 };
+
 
 exports.getpumsaleSearchbydate = async (req, res) => {
   try {
@@ -687,7 +587,7 @@ exports.getpumsaleSearchbydate = async (req, res) => {
       });
     }
   } catch (err) {
-    console.error("Error fetching pump sales:", err);
+     
     res.status(500).json({ error: "Failed to fetch pump sales" });
   }
 };

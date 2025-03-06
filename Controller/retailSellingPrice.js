@@ -167,3 +167,49 @@ exports.updatePrice = async (req, res) => {
         res.status(500).json({ error: 'Failed to Fetched Price' })
     }
 }
+
+
+exports.rspSearch = async (req, res) => {
+    try {
+        let { fromDate, toDate  } = req.body;  
+
+        if (!fromDate || !toDate  ) {
+            return res.status(400).json({
+                statuscode: 400,
+                message: "From date, to date  are required."
+            });
+        }
+
+        const query = `
+        SELECT  *
+        FROM  retailsellingprice
+        WHERE created_at BETWEEN $1 AND $2
+         ORDER BY created_at DESC
+      `;
+
+        const values = [fromDate, toDate]; // Use ILIKE for case-insensitive search
+
+        const result = await pool.query(query, values);
+
+         if (result.rows.length > 0) {
+            res.status(200).json({
+                statuscode: 200,
+                message: "RSP fetched successfully",
+                rsp: result.rows
+            });
+        } else {
+            res.status(404).json({
+                statuscode: 404,
+                message: "No  RSP found for the specified date range  ",
+                rsp: []
+            });
+        }
+    } catch (error) {
+        
+        res.status(500).json({
+            statuscode: 500,
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+};

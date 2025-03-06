@@ -28,8 +28,7 @@ exports.pumsalesreportsRange = async (req, res) => {
 
         const result = await pool.query(query, values);
 
-        console.log('Filtered Pump Sales Result:', result.rows);
-
+    
         if (result.rows.length > 0) {
             res.status(200).json({
                 statuscode: 200,
