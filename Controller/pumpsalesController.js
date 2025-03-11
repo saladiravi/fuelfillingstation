@@ -322,7 +322,7 @@ exports.addPumpSales = async (req, res) => {
           query: `
             UPDATE pump_sales
             SET cmr = $1, omr = $2, amount = $3, sale = $4, fuel_type = $5, guns = $6, res_id = $7
-            WHERE pump_sale_id = $8,status=$9;
+            WHERE pump_sale_id = $8 AND status=$9;
           `,
           values: [cmr || 0, omr || 0, amount || 0, sale || 0, fuel_type || '', guns || '', res_id || '', status || '',pump_sale_id]
         }));
