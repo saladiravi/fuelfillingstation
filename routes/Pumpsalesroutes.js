@@ -12,6 +12,10 @@ router.get('/getPumpDetailsbydate',pumpSales.getPumpDetailsbydate);
 router.get('/getpumpsales',pumpSales.getTodaysPumpSales);
 router.post('/getpumpsalesBydate',pumpSales.getPumpSalesanydate);
 router.post('/getPumpsalesSearchBydate',pumpSales.getpumsaleSearchbydate);
+router.post('/getpumpdetailsforedit',pumpSales.pumpdetailsforedit);
+router.post("/updatePumpsales", (req, res, next) => {
+  next();
+}, upload.any(), pumpSales.updatePumpDetails);
 
 
 module.exports=router
