@@ -491,7 +491,7 @@ exports.getPumpSalesanydate = async (req, res) => {
  
       // Fetch credit data for the shift
       const creditQuery = `
-        SELECT bill_no, customer_name, product, quantity, rsp, bill_recipt, cost 
+        SELECT bill_no, customer_name, product, quantity, rsp, bill_recipt, cost,bill_type,payment_status,vehicle_number,paid_datetime 
         FROM credit_data 
         WHERE pumpsale_shift_id = $1
       `;
@@ -559,6 +559,7 @@ exports.getPumpSalesanydate = async (req, res) => {
           sale: sale.sale,
           amount: sale.amount,
           res_id: sale.res_id,
+          attendence_id:sale.attendence_id
         });
       }
 
@@ -640,14 +641,14 @@ exports.pumpdetailsforedit = async (req, res) => {
     // Query to fetch pump sales and shift data
     const salesQuery = `
       SELECT DISTINCT ON (ps.pump_sale_id)
-        ps.pump_sale_id, ps.bay_side, ps.fuel_type, ps.omr, ps.cmr, ps.sale, ps.res_id, ps.amount,
+        ps.pump_sale_id, ps.bay_side, ps.fuel_type, ps.omr, ps.cmr, ps.sale, ps.res_id, ps.amount,ps.attendence_id,
         a."pumpNumber", a.operatorshift, e."employeeName", ps.created_at, e.employee_id,
         p.pump_sale_amount, p.shift_sales_amount, p.total_online_payment_amount, p.credit_amount,
         p.pumpsale_shift_id, p.pump_sale_500, p.pump_sale_200, p.pump_sale_100, p.pump_sale_50, 
         p.pump_sale_20, p.pump_sale_10, p.pump_sale_5, p.pump_sale_2, p.pump_sale_1, 
         p.advance_amount, p.advance_500, p.advance_200, p.advance_100, p.advance_50, 
         p.advance_20, p.advance_10, p.advance_5, p.advance_2, p.advance_1, 
-        p.cash_amount, p.upi, p.pos, p.alp, p.company_account, p.short_amount,p.plus_amount
+        p.cash_amount, p.upi, p.pos, p.alp, p.company_account, p.short_amount,p.plus_amount,p.attendence_id
       FROM pump_sales ps
       JOIN attendence a ON ps.attendence_id = a.attendence_id
       JOIN employees e ON a.operator_name = e.employee_id
@@ -676,7 +677,8 @@ exports.pumpdetailsforedit = async (req, res) => {
      
       // Fetch credit data for the shift
       const creditQuery = `
-        SELECT credit_data_id,bill_no, customer_name, product, quantity, rsp, bill_recipt, cost 
+        SELECT credit_data_id,bill_no, customer_name, product, quantity, rsp, bill_recipt, cost,bill_type,paid_datetime,
+        payment_status ,vehicle_number
         FROM credit_data 
         WHERE pumpsale_shift_id = $1
       `;
@@ -716,6 +718,7 @@ exports.pumpdetailsforedit = async (req, res) => {
           advance_2: sale.advance_2,
           advance_1: sale.advance_1,
           cash_amount: sale.cash_amount,
+          attendence_id:sale.attendence_id,
           upi: sale.upi,
           pos: sale.pos,
           alp: sale.alp,
@@ -744,6 +747,7 @@ exports.pumpdetailsforedit = async (req, res) => {
           sale: sale.sale,
           amount: sale.amount,
           res_id: sale.res_id,
+          attendence_id:sale.attendence_id
         });
       }
 
