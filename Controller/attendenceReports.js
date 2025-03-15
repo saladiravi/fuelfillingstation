@@ -24,7 +24,7 @@ exports.getAttendanceByDateRange = async (req, res) => {
   a.operatorshift,
   a.from_time,
   a.to_time,
-  a.attendence,  -- Display attendance (1 or 0)
+  a.attendence, 
  
   COALESCE(ARRAY_AGG(JSON_BUILD_OBJECT('bay_side', p.bay_side)), '{}') AS pump_sales
 FROM 
@@ -36,7 +36,7 @@ INNER JOIN pump_sales p
 WHERE a.date BETWEEN $1 AND $2
 AND ($3::INTEGER IS NULL OR e.employee_id = $3::INTEGER)  -- ✅ Explicitly cast parameter
 GROUP BY 
-  a.attendence_id, a.date, a."pumpNumber", a.remarks, e."employeeName", a.operatorshift, a.attendence.a.from_time,a.to_time;
+  a.attendence_id, a.date, a."pumpNumber", a.remarks, e."employeeName", a.operatorshift, a.attendence,a.from_time,a.to_time;
 `;
 
 
