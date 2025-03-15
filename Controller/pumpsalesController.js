@@ -150,7 +150,7 @@ exports.getPumpDetailsbydate = async (req, res) => {
 
     res.status(200).json(processedRows);
   } catch (err) {
-    console.error('Error fetching pump details:', err.stack);
+     
     res.status(500).json({ error: 'Failed to fetch pump details' });
   }
 };
@@ -290,7 +290,7 @@ exports.addPumpSales = async (req, res) => {
       const existingShift = await client.query(existingShiftQuery, [attendence_id]);
 
       if (existingShift.rows.length > 0) {
-        console.error("Transaction Error: Data already exists for this attendance ID.");
+      
         await client.query("ROLLBACK");
         return res.status(400).json({ statusCode: 400, message: "Data already exists for this attendance ID." });
       }
@@ -393,13 +393,13 @@ exports.addPumpSales = async (req, res) => {
 
     } catch (error) {
       await client.query("ROLLBACK");
-      console.error("Server Error:", error);
+      
       res.status(500).json({ error: "Failed to update pump sales and shift data." });
     } finally {
       client.release();
     }
   } catch (err) {
-    console.error("Server Error:", err);
+    
     res.status(500).json({ error: "Failed to process the request." });
   }
 };
@@ -659,7 +659,7 @@ exports.pumpdetailsforedit = async (req, res) => {
     `;
 
     const salesResult = await pool.query(salesQuery, [created_at, operatorName]);
-    console.log('Sales Result:', salesResult.rows);
+   
 
     if (salesResult.rows.length === 0) {
       return res.status(404).json({
@@ -804,15 +804,14 @@ exports.updatePumpDetails = async (req, res) => {
       // Check if shift data already exists
       const existingShiftQuery = `SELECT pumpsale_shift_id FROM pumpsales_shift_data WHERE attendence_id = $1`;
       const existingShift = await client.query(existingShiftQuery, [attendence_id]);
-      console.log('existingShift',existingShift);
+    
 
       let pumpsale_shift_id;
 
       if (existingShift.rows.length > 0) {
         // Update existing shift data
         pumpsale_shift_id = existingShift.rows[0].pumpsale_shift_id;
-        console.log('pumpsale_shift',pumpsale_shift_id);
-
+     
 
         const updateShiftQuery = `
           UPDATE pumpsales_shift_data 

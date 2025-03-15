@@ -25,7 +25,7 @@ const aadharImage = req.files?.aadhar_Image?.[0]?.filename
   const aadharbackside = req.files?.aadhar_backsideimage?.[0]?.filename
   ?`/uploads/${req.files.aadhar_backsideimage[0].filename}`:null;
 
-  console.log("Aadhar Backside Image:", aadharbackside); 
+ 
   
     const emp = await pool.query(
       `INSERT INTO employees(
@@ -41,7 +41,7 @@ const aadharImage = req.files?.aadhar_Image?.[0]?.filename
       employee: emp.rows[0],
     });
   } catch (err) {
-    console.error('Error inserting employee:', err.message);
+   
     res.status(500).json({ error: 'Failed to insert employee' });
   }
 };
@@ -56,7 +56,7 @@ try{
     employees: allemp.rows,  
   });
 }catch(err){
-    console.log(err);
+  
     res.status(500).json({error:'failed'})
 }
 }
@@ -82,7 +82,7 @@ exports.getEmployeeById = async (req, res) => {
       employee: empById.rows[0],  
     });
   } catch (err) {
-    console.error("Error fetching employee by ID:", err);
+   
     res.status(500).json({ error: "fail" });
   }
 };
@@ -187,7 +187,7 @@ exports.updateEmployee = async (req, res) => {
       employee: result.rows[0],
     });
   } catch (err) {
-    console.error('Error updating employee:', err.message);
+  
     res.status(500).json({ error: 'Failed to update employee' });
   }
 };

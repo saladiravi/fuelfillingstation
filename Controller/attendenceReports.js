@@ -1,5 +1,5 @@
-const pool=require('../db/db');
-const moment=require('moment');
+const pool = require('../db/db');
+const moment = require('moment');
 
 exports.getAttendanceByDateRange = async (req, res) => {
   try {
@@ -22,9 +22,10 @@ exports.getAttendanceByDateRange = async (req, res) => {
   a.remarks,
   e."employeeName" AS operator_name,
   a.operatorshift,
+  a.from_time,
+  a.to_time,
   a.attendence,  -- Display attendance (1 or 0)
-  COUNT(a.attendence) FILTER (WHERE a.attendence = 1) AS present_count,  -- Count present
-  COUNT(a.attendence) FILTER (WHERE a.attendence = 0) AS absent_count,   -- Count absent
+ 
   COALESCE(ARRAY_AGG(JSON_BUILD_OBJECT('bay_side', p.bay_side)), '{}') AS pump_sales
 FROM 
   attendence a
@@ -35,17 +36,17 @@ INNER JOIN pump_sales p
 WHERE a.date BETWEEN $1 AND $2
 AND ($3::INTEGER IS NULL OR e.employee_id = $3::INTEGER)  -- ✅ Explicitly cast parameter
 GROUP BY 
-  a.attendence_id, a.date, a."pumpNumber", a.remarks, e."employeeName", a.operatorshift, a.attendence;
+  a.attendence_id, a.date, a."pumpNumber", a.remarks, e."employeeName", a.operatorshift, a.attendence.a.from_time,a.to_time;
 `;
 
- 
-    const queryParams = [fromDate, toDate, employee_id || null];
- 
 
-  
+    const queryParams = [fromDate, toDate, employee_id || null];
+
+
+
     const attendanceDetails = await pool.query(query, queryParams);
 
- 
+
 
     if (attendanceDetails.rows.length === 0) {
       return res.status(404).json({
@@ -66,7 +67,6 @@ GROUP BY
   }
 };
 
-  
-  
-  
-  
+
+
+

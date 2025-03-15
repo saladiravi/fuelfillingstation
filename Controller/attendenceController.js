@@ -116,8 +116,7 @@ exports.addattendence = async (req, res) => {
           [date, operatorshift, pumpNumber, operator_name]
         );
 
-        console.log("bayCheck Result:", bayCheck.rows[0].count);
-
+       
         if (parseInt(bayCheck.rows[0].count) > 0) {
           return res.status(400).json({
             statusCode: 400,
@@ -276,7 +275,7 @@ exports.getAttendenceById = async (req, res) => {
       `;
 
     const attendById = await pool.query(query, [attendence_id]);
-    console.log('attendById',attendById);
+   
 
     
     if (attendById.rows.length === 0) {
@@ -289,7 +288,7 @@ exports.getAttendenceById = async (req, res) => {
       attendenceId: attendById.rows[0]
     });
   } catch (err) {
-    console.error("Error fetching attendance by ID:", err);
+     
     res.status(500).json({ error: "Failed to fetch attendance record" });
   }
 };
@@ -372,6 +371,8 @@ exports.getAttedencetoday = async (req, res) => {
         a.date,
         a."pumpNumber", 
         a.remarks,
+        a.from_time,
+        a.to_time,
         e."employeeName" AS operator_name,
         a.operatorshift,
         ARRAY_AGG(
@@ -389,7 +390,7 @@ exports.getAttedencetoday = async (req, res) => {
         ON a.attendence_id = p.attendence_id
       WHERE a.date = CURRENT_DATE
       GROUP BY 
-        a.attendence_id, a.date, a."pumpNumber", a.remarks, e."employeeName", a.operatorshift;
+        a.attendence_id, a.date, a."pumpNumber", a.remarks, e."employeeName", a.operatorshift,a.from_time,a.to_time;
     `;
 
     const attendenceDetails = await pool.query(query);
@@ -432,6 +433,8 @@ exports.getdateAtendenceSearch = async (req, res) => {
         a.date,
         a."pumpNumber", 
         a.remarks,
+        a.from_time,
+        a.to_time,
         e."employeeName" AS operator_name,
         a.operatorshift,
         ARRAY_AGG(
@@ -449,7 +452,7 @@ exports.getdateAtendenceSearch = async (req, res) => {
         ON a.attendence_id = p.attendence_id
       WHERE a.date = $1
       GROUP BY 
-        a.attendence_id, a.date, a."pumpNumber", a.remarks, e."employeeName", a.operatorshift;
+        a.attendence_id, a.date, a."pumpNumber", a.remarks, e."employeeName", a.operatorshift,a.from_time,a.to_time;
     `;
 
     const attendByDate = await pool.query(query, [date]);
@@ -468,7 +471,7 @@ exports.getdateAtendenceSearch = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching attendance details:', error.message);
+ 
     res.status(500).json({ error: 'Failed to fetch attendance details' });
   }
 };

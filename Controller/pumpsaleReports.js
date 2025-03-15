@@ -44,7 +44,7 @@ exports.pumsalesreportsRange = async (req, res) => {
             });
         }
     } catch (error) {
-        console.error("Error fetching pump sales:", error);
+      
         res.status(500).json({
             statuscode: 500,
             message: "Internal server error",

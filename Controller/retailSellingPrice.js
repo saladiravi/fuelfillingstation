@@ -33,7 +33,7 @@ exports.addsellingprice = async (req, res) => {
             sellingprices: sellingprice.rows[0],
         });
     } catch (err) {
-        console.error('Error add selling price:', err.message);
+      
         res.status(500).json({ error: 'Failed to insert price' });
     }
 };
@@ -104,7 +104,7 @@ exports.getpricebydate = async (req, res) => {
             prices: pricedate.rows, 
         });
     } catch (err) {
-        console.error("Error fetching prices by date:", err.message);
+    
         res.status(500).json({ error: "Failed to fetch prices" });
     }
 };
