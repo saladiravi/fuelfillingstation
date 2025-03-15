@@ -19,6 +19,7 @@ exports.pumsalesreportsRange = async (req, res) => {
         FROM pump_sales ps
         JOIN attendence a ON ps.attendence_id = a.attendence_id
         JOIN employees e ON a.operator_name = e.employee_id
+          JOIN pumpsales_shift_data psd ON a.attendence_id=psd.attendence_id
         WHERE ps.created_at BETWEEN $1 AND $2
           AND e."employeeName" ILIKE $3
         ORDER BY e.employee_id, ps.created_at DESC
