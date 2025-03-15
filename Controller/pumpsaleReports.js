@@ -14,8 +14,8 @@ exports.pumsalesreportsRange = async (req, res) => {
         }
 
         const query = `
-        SELECT DISTINCT ON (e.employee_id) ps.pump_sale_id, ps.bay_side, ps.fuel_type, ps.amount, ps.created_at, 
-               a."pumpNumber", a.operatorshift, e."employeeName", a.attendence_id, e.employee_id
+        SELECT DISTINCT ON (e.employee_id) ps.pump_sale_id, ps.bay_side, ps.fuel_type, ps.created_at, 
+               a."pumpNumber", a.operatorshift, e."employeeName", a.attendence_id, e.employee_id,psd.plus_amount,psd.short_amount,psd.shift_sales_amount,psd.pump_sale_amount
         FROM pump_sales ps
         JOIN attendence a ON ps.attendence_id = a.attendence_id
         JOIN employees e ON a.operator_name = e.employee_id

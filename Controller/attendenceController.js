@@ -384,7 +384,7 @@ exports.getAttedencetoday = async (req, res) => {
       INNER JOIN 
         employees e 
         ON a.operator_name = e.employee_id
-      INNER JOIN 
+      LEFT JOIN 
         pump_sales p
         ON a.attendence_id = p.attendence_id
       WHERE a.date = CURRENT_DATE
@@ -408,7 +408,7 @@ exports.getAttedencetoday = async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Error fetching attendance details:', err.message);
+     
     res.status(500).json({ error: 'Failed to fetch attendance details' });
   }
 };
@@ -444,7 +444,7 @@ exports.getdateAtendenceSearch = async (req, res) => {
       INNER JOIN 
         employees e 
         ON a.operator_name = e.employee_id
-      INNER JOIN 
+      LEFT JOIN 
         pump_sales p
         ON a.attendence_id = p.attendence_id
       WHERE a.date = $1
