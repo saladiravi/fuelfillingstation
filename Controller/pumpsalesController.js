@@ -373,19 +373,52 @@ exports.addPumpSales = async (req, res) => {
       }
 
       // Batch insert credit data
-      if (Array.isArray(credit_data) && credit_data.length > 0) {
-        const creditQuery = `
-          INSERT INTO credit_data (bill_no, customer_name, product, quantity, rsp, cost, bill_recipt, pumpsale_shift_id)
-          VALUES ${credit_data.map((_, i) => `($${i * 8 + 1}, $${i * 8 + 2}, $${i * 8 + 3}, $${i * 8 + 4}, $${i * 8 + 5}, $${i * 8 + 6}, $${i * 8 + 7}, $${i * 8 + 8})`).join(", ")}
-        `;
-        const creditValues = credit_data.flatMap(({ bill_no, customer_name, product, quantity, rsp, cost, bill_recipt }) => [
-          bill_no, customer_name, product, quantity, rsp, cost, bill_recipt, pumpsale_shift_id
-        ]);
+      // if (Array.isArray(credit_data) && credit_data.length > 0) {
+      //   const creditQuery = `
+      //     INSERT INTO credit_data (bill_no, customer_name, product, quantity, rsp, cost, bill_recipt, pumpsale_shift_id)
+      //     VALUES ${credit_data.map((_, i) => `($${i * 8 + 1}, $${i * 8 + 2}, $${i * 8 + 3}, $${i * 8 + 4}, $${i * 8 + 5}, $${i * 8 + 6}, $${i * 8 + 7}, $${i * 8 + 8})`).join(", ")}
+      //   `;
+      //   const creditValues = credit_data.flatMap(({ bill_no, customer_name, product, quantity, rsp, cost, bill_recipt }) => [
+      //     bill_no, customer_name, product, quantity, rsp, cost, bill_recipt, pumpsale_shift_id
+      //   ]);
 
+      //   await client.query(creditQuery, creditValues);
+      // }
+
+      if (Array.isArray(credit_data) && credit_data.length > 0) { 
+        const creditQuery = `
+          INSERT INTO credit_data 
+            (bill_no, customer_name, product, quantity, rsp, cost, bill_recipt, pumpsale_shift_id, 
+             bill_type, payment_status, vehicle_number, paid_datetime)
+          VALUES ${credit_data.map((_, i) => `($${i * 12 + 1}, $${i * 12 + 2}, $${i * 12 + 3}, $${i * 12 + 4}, 
+                                               $${i * 12 + 5}, $${i * 12 + 6}, $${i * 12 + 7}, $${i * 12 + 8},
+                                               $${i * 12 + 9}, $${i * 12 + 10}, $${i * 12 + 11}, $${i * 12 + 12})`).join(", ")}
+        `;
+      
+        const creditValues = credit_data.flatMap(({ 
+          bill_no, customer_name, product, quantity, rsp, cost, bill_recipt, 
+          bill_type, payment_status, vehicle_number, paid_datetime 
+        }) => [
+          bill_no || '', 
+          customer_name || '', 
+          product || '', 
+          quantity || 0, 
+          rsp || '', 
+          cost || 0, 
+          bill_recipt || null, 
+          pumpsale_shift_id, 
+          bill_type || '', 
+          payment_status || '', 
+          vehicle_number || '', 
+          paid_datetime ? new Date(paid_datetime) : null // Ensure valid timestamp
+        ]);
+      
+        console.log("Executing Query:", creditQuery);
+        console.log("Query Values:", JSON.stringify(creditValues, null, 2));
+      
         await client.query(creditQuery, creditValues);
       }
-
-     
+      
 
       await client.query("COMMIT");
 
