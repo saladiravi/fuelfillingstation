@@ -2,8 +2,6 @@ const pool = require('../db/db');
 const moment = require('moment');
 
 
- 
- 
 
 
 exports.getPumpDetailsbydate = async (req, res) => {
