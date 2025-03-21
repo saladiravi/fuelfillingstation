@@ -171,7 +171,7 @@ exports.addattendence = async (req, res) => {
             null,
             null,
             null,
-            new Date(),
+            date,
           ]);
         }
       }
