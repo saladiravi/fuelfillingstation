@@ -158,7 +158,7 @@ const moment = require('moment');
  
 
 
-exports.getPumpDetailsByDate = async (req, res) => {
+exports.getPumpDetailsbydate = async (req, res) => {
   try {
     const { date, operator_name } = req.query;
     const operatorName = parseInt(operator_name, 10);
