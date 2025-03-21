@@ -2,10 +2,165 @@ const pool = require('../db/db');
 const moment = require('moment');
 
 
-exports.getPumpDetailsbydate = async (req, res) => {
+// exports.getPumpDetailsbydate = async (req, res) => {
+//   try {
+//     const { date, operator_name } = req.query;
+
+//     const operatorName = parseInt(operator_name, 10);
+
+//     if (isNaN(operatorName)) {
+//       return res.status(400).json({ error: 'Invalid operator_name. It must be a number.' });
+//     }
+
+//     if (!date) {
+//       return res.status(400).json({ error: 'Date is required.' });
+//     }
+
+
+//     // Check if data for the selected date and operator already exists
+//     const checkQuery = `
+//   SELECT ps.*
+//   FROM attendence a
+//   INNER JOIN pump_sales ps ON ps.attendence_id = a.attendence_id
+//   WHERE a.date::date = $1 
+//     AND a.operator_name = $2
+   
+//     AND ps.status = 1; -- Check if status is 1 in pump_sales
+// `;
+
+//     const checkResult = await pool.query(checkQuery, [date, operatorName]);
+
+//     if (checkResult.rows.length > 0) {
+//       return res.status(200).json({
+//         message: 'Data already added for the selected date, operator, and shift.',
+//         data: checkResult.rows
+//       });
+//     }
+
+//     const query = `
+//       SELECT 
+//         ps.*,
+//         COALESCE(a."pumpNumber", 'Not Assigned') AS pumpNumber,
+//         COALESCE(a.operatorshift, 'Unknown') AS operatorshift,
+//         e."employeeName" AS operator_name,
+//         ps."cmr",
+//         ps."bay_side",
+//         ps."fuel_type"
+//       FROM 
+//         attendence a
+//       INNER JOIN 
+//         pump_sales ps ON ps.attendence_id = a.attendence_id
+//       INNER JOIN 
+//         employees e ON e.employee_id = a.operator_name
+//       WHERE
+//         a.date::date = $1 AND a.operator_name = $2;
+//     `;
+
+
+//     const result = await pool.query(query, [date, operatorName]);
+
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ error: 'No data found for the given date and operator.' });
+//     }
+
+//     // Process rows to fetch the correct OMR value
+//     const processedRows = await Promise.all(
+//       result.rows.map(async (row) => {
+//         if (row.operatorshift === 'MID-A') {
+//           // Fetch the CMR value from the previous day's B shift
+//           const prevShiftQuery = `
+//             SELECT ps."cmr"
+//             FROM pump_sales ps
+//             INNER JOIN attendence a ON ps.attendence_id = a.attendence_id
+//             WHERE 
+//               a.date::date = $1::date  
+//               AND a.operatorshift = 'B'
+//               AND ps.bay_side = $2
+//               AND ps.fuel_type = $3;
+//           `;
+//           const prevShiftResult = await pool.query(prevShiftQuery, [date, row.bay_side, row.fuel_type]);
+//           row.omr = prevShiftResult.rows.length > 0 ? prevShiftResult.rows[0].cmr : null;
+//         } if (row.operatorshift === 'A') {
+//           // Fetch the CMR value from the previous day's B shift
+//           const prevShiftQuery = `
+//             SELECT ps."cmr"
+//             FROM pump_sales ps
+//             INNER JOIN attendence a ON ps.attendence_id = a.attendence_id
+//             WHERE 
+//               a.date::date = $1::date 
+//               AND a.operatorshift = 'MID-A'
+//               AND ps.bay_side = $2
+//               AND ps.fuel_type = $3;
+//           `;
+//           const prevShiftResult = await pool.query(prevShiftQuery, [date, row.bay_side, row.fuel_type]);
+//           row.omr = prevShiftResult.rows.length > 0 ? prevShiftResult.rows[0].cmr : null;
+//         }
+         
+//         else if (row.operatorshift === 'MID-B') {
+
+//           const sameDayShiftQuery = `
+//           SELECT ps."cmr"
+//           FROM pump_sales ps
+//           INNER JOIN attendence a ON ps.attendence_id = a.attendence_id
+//           WHERE 
+//             a.date::date = $1
+//             AND a.operatorshift = 'A'
+//             AND ps.bay_side = $2
+//             AND ps.fuel_type = $3;
+//         `;
+//           const sameDayShiftResult = await pool.query(sameDayShiftQuery, [date, row.bay_side, row.fuel_type]);
+//           row.omr = sameDayShiftResult.rows.length > 0 ? sameDayShiftResult.rows[0].cmr : null;
+
+//         } 
+//          else if (row.operatorshift === 'B') {
+
+//           const sameDayShiftQuery = `
+//           SELECT ps."cmr"
+//           FROM pump_sales ps
+//           INNER JOIN attendence a ON ps.attendence_id = a.attendence_id
+//           WHERE 
+//             a.date::date = $1
+//             AND a.operatorshift = 'MID-B'
+//             AND ps.bay_side = $2
+//             AND ps.fuel_type = $3;
+//         `;
+//           const sameDayShiftResult = await pool.query(sameDayShiftQuery, [date, row.bay_side, row.fuel_type]);
+//           row.omr = sameDayShiftResult.rows.length > 0 ? sameDayShiftResult.rows[0].cmr : null;
+
+//         } else {
+//           row.omr = null;
+//         }
+
+//         const columnName = row.fuel_type.toLowerCase(); // 'ms', 'hsd', or 'speed'
+//         if (!['ms', 'hsd', 'speed', 'cng'].includes(columnName)) {
+//           row.retail_price = null;
+//         } else {
+//           const rspQuery = `
+//             SELECT rsp.${columnName} AS price
+//             FROM retailsellingprice rsp
+//             WHERE rsp.created_at::date = $1::date;
+//           `;
+//           const rspResult = await pool.query(rspQuery, [date]);
+//           row.retail_price = rspResult.rows.length > 0 ? rspResult.rows[0].price : null;
+//         }
+
+//         return row;
+//       })
+//     );
+
+//     res.status(200).json(processedRows);
+//   } catch (err) {
+     
+//     res.status(500).json({ error: 'Failed to fetch pump details' });
+//   }
+// };
+
+ 
+
+
+exports.getPumpDetailsByDate = async (req, res) => {
   try {
     const { date, operator_name } = req.query;
-
     const operatorName = parseInt(operator_name, 10);
 
     if (isNaN(operatorName)) {
@@ -16,20 +171,14 @@ exports.getPumpDetailsbydate = async (req, res) => {
       return res.status(400).json({ error: 'Date is required.' });
     }
 
-
-    // Check if data for the selected date and operator already exists
+    // Check if data already exists for the given date and operator
     const checkQuery = `
-  SELECT ps.*
-  FROM attendence a
-  INNER JOIN pump_sales ps ON ps.attendence_id = a.attendence_id
-  WHERE a.date::date = $1 
-    AND a.operator_name = $2
-   
-    AND ps.status = 1; -- Check if status is 1 in pump_sales
-`;
+      SELECT ps.* FROM attendence a
+      INNER JOIN pump_sales ps ON ps.attendence_id = a.attendence_id
+      WHERE a.date::date = $1 AND a.operator_name = $2 AND ps.status = 1;
+    `;
 
     const checkResult = await pool.query(checkQuery, [date, operatorName]);
-
     if (checkResult.rows.length > 0) {
       return res.status(200).json({
         message: 'Data already added for the selected date, operator, and shift.',
@@ -37,107 +186,92 @@ exports.getPumpDetailsbydate = async (req, res) => {
       });
     }
 
+    // Fetch pump details
     const query = `
       SELECT 
-        ps.*,
-        COALESCE(a."pumpNumber", 'Not Assigned') AS pumpNumber,
+        ps.*, COALESCE(a.pumpNumber, 'Not Assigned') AS pumpNumber,
         COALESCE(a.operatorshift, 'Unknown') AS operatorshift,
-        e."employeeName" AS operator_name,
-        ps."cmr",
-        ps."bay_side",
-        ps."fuel_type"
-      FROM 
-        attendence a
-      INNER JOIN 
-        pump_sales ps ON ps.attendence_id = a.attendence_id
-      INNER JOIN 
-        employees e ON e.employee_id = a.operator_name
-      WHERE
-        a.date::date = $1 AND a.operator_name = $2;
+        e.employeeName AS operator_name, ps.cmr, ps.bay_side, ps.fuel_type
+      FROM attendence a
+      INNER JOIN pump_sales ps ON ps.attendence_id = a.attendence_id
+      INNER JOIN employees e ON e.employee_id = a.operator_name
+      WHERE a.date::date = $1 AND a.operator_name = $2;
     `;
 
-
     const result = await pool.query(query, [date, operatorName]);
-
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'No data found for the given date and operator.' });
     }
 
-    // Process rows to fetch the correct OMR value
+    // Process rows to fetch correct OMR values
     const processedRows = await Promise.all(
       result.rows.map(async (row) => {
         if (row.operatorshift === 'MID-A') {
-          // Fetch the CMR value from the previous day's B shift
+          // Fetch CMR from previous day's B shift
           const prevShiftQuery = `
-            SELECT ps."cmr"
-            FROM pump_sales ps
+            SELECT ps.cmr FROM pump_sales ps
             INNER JOIN attendence a ON ps.attendence_id = a.attendence_id
-            WHERE 
-              a.date::date = $1::date  
-              AND a.operatorshift = 'B'
-              AND ps.bay_side = $2
-              AND ps.fuel_type = $3;
+            WHERE a.date::date = $1::date AND a.operatorshift = 'B' AND ps.bay_side = $2 AND ps.fuel_type = $3;
           `;
           const prevShiftResult = await pool.query(prevShiftQuery, [date, row.bay_side, row.fuel_type]);
           row.omr = prevShiftResult.rows.length > 0 ? prevShiftResult.rows[0].cmr : null;
-        } if (row.operatorshift === 'A') {
-          // Fetch the CMR value from the previous day's B shift
-          const prevShiftQuery = `
-            SELECT ps."cmr"
-            FROM pump_sales ps
-            INNER JOIN attendence a ON ps.attendence_id = a.attendence_id
-            WHERE 
-              a.date::date = $1::date 
-              AND a.operatorshift = 'MID-A'
-              AND ps.bay_side = $2
-              AND ps.fuel_type = $3;
-          `;
-          const prevShiftResult = await pool.query(prevShiftQuery, [date, row.bay_side, row.fuel_type]);
-          row.omr = prevShiftResult.rows.length > 0 ? prevShiftResult.rows[0].cmr : null;
-        }
-         
-        else if (row.operatorshift === 'MID-B') {
-
-          const sameDayShiftQuery = `
-          SELECT ps."cmr"
-          FROM pump_sales ps
-          INNER JOIN attendence a ON ps.attendence_id = a.attendence_id
-          WHERE 
-            a.date::date = $1
-            AND a.operatorshift = 'A'
-            AND ps.bay_side = $2
-            AND ps.fuel_type = $3;
-        `;
-          const sameDayShiftResult = await pool.query(sameDayShiftQuery, [date, row.bay_side, row.fuel_type]);
-          row.omr = sameDayShiftResult.rows.length > 0 ? sameDayShiftResult.rows[0].cmr : null;
-
         } 
-         else if (row.operatorshift === 'B') {
-
+        else if (row.operatorshift === 'A') {
+          // Fetch from MID-A, or fallback to previous day's B shift
+          let prevShiftQuery = `
+            SELECT ps.cmr FROM pump_sales ps
+            INNER JOIN attendence a ON ps.attendence_id = a.attendence_id
+            WHERE a.date::date = $1::date AND a.operatorshift = 'MID-A' AND ps.bay_side = $2 AND ps.fuel_type = $3;
+          `;
+          let prevShiftResult = await pool.query(prevShiftQuery, [date, row.bay_side, row.fuel_type]);
+          if (prevShiftResult.rows.length === 0) {
+            prevShiftQuery = `
+              SELECT ps.cmr FROM pump_sales ps
+              INNER JOIN attendence a ON ps.attendence_id = a.attendence_id
+              WHERE a.date::date = $1::date AND a.operatorshift = 'B' AND ps.bay_side = $2 AND ps.fuel_type = $3;
+            `;
+            prevShiftResult = await pool.query(prevShiftQuery, [date, row.bay_side, row.fuel_type]);
+          }
+          row.omr = prevShiftResult.rows.length > 0 ? prevShiftResult.rows[0].cmr : null;
+        } 
+        else if (row.operatorshift === 'MID-B') {
+          // Fetch from A shift
           const sameDayShiftQuery = `
-          SELECT ps."cmr"
-          FROM pump_sales ps
-          INNER JOIN attendence a ON ps.attendence_id = a.attendence_id
-          WHERE 
-            a.date::date = $1
-            AND a.operatorshift = 'MID-B'
-            AND ps.bay_side = $2
-            AND ps.fuel_type = $3;
-        `;
+            SELECT ps.cmr FROM pump_sales ps
+            INNER JOIN attendence a ON ps.attendence_id = a.attendence_id
+            WHERE a.date::date = $1 AND a.operatorshift = 'A' AND ps.bay_side = $2 AND ps.fuel_type = $3;
+          `;
           const sameDayShiftResult = await pool.query(sameDayShiftQuery, [date, row.bay_side, row.fuel_type]);
           row.omr = sameDayShiftResult.rows.length > 0 ? sameDayShiftResult.rows[0].cmr : null;
-
+        } 
+        else if (row.operatorshift === 'B') {
+          // Fetch from MID-B, or fallback to A shift if MID-B is missing
+          let sameDayShiftQuery = `
+            SELECT ps.cmr FROM pump_sales ps
+            INNER JOIN attendence a ON ps.attendence_id = a.attendence_id
+            WHERE a.date::date = $1 AND a.operatorshift = 'MID-B' AND ps.bay_side = $2 AND ps.fuel_type = $3;
+          `;
+          let sameDayShiftResult = await pool.query(sameDayShiftQuery, [date, row.bay_side, row.fuel_type]);
+          if (sameDayShiftResult.rows.length === 0) {
+            sameDayShiftQuery = `
+              SELECT ps.cmr FROM pump_sales ps
+              INNER JOIN attendence a ON ps.attendence_id = a.attendence_id
+              WHERE a.date::date = $1 AND a.operatorshift = 'A' AND ps.bay_side = $2 AND ps.fuel_type = $3;
+            `;
+            sameDayShiftResult = await pool.query(sameDayShiftQuery, [date, row.bay_side, row.fuel_type]);
+          }
+          row.omr = sameDayShiftResult.rows.length > 0 ? sameDayShiftResult.rows[0].cmr : null;
         } else {
           row.omr = null;
         }
 
-        const columnName = row.fuel_type.toLowerCase(); // 'ms', 'hsd', or 'speed'
+        // Fetch retail price
+        const columnName = row.fuel_type.toLowerCase();
         if (!['ms', 'hsd', 'speed', 'cng'].includes(columnName)) {
           row.retail_price = null;
         } else {
           const rspQuery = `
-            SELECT rsp.${columnName} AS price
-            FROM retailsellingprice rsp
+            SELECT rsp.${columnName} AS price FROM retailsellingprice rsp
             WHERE rsp.created_at::date = $1::date;
           `;
           const rspResult = await pool.query(rspQuery, [date]);
@@ -150,107 +284,9 @@ exports.getPumpDetailsbydate = async (req, res) => {
 
     res.status(200).json(processedRows);
   } catch (err) {
-     
     res.status(500).json({ error: 'Failed to fetch pump details' });
   }
 };
-
-
-
-// exports.addPumpSales = async (req, res) => {
-//   try {
-//     const pumpSalesUpdates = req.body;
-
-//     if (!Array.isArray(pumpSalesUpdates) || pumpSalesUpdates.length === 0) {
-//       return res.status(400).json({
-//         statusCode: 400,
-//         message: 'Request body should be a non-empty array.',
-//       });
-//     }
-
-//     for (const pumpSale of pumpSalesUpdates) {
-//       const { pump_sale_id, attendence_id, cmr, omr, res_id, amount, sale } = pumpSale;
-
-      
-//       if (!attendence_id || !pump_sale_id) {
-//         return res.status(400).json({
-//           statusCode: 400,
-//           message: 'Both attendence_id and pump_sale_id are required for updates.',
-//         });
-//       }
-
-//       const fields = [];
-//       const values = [];
-//       let index = 1;
-
-      
-//       if (cmr !== undefined) {
-//         fields.push(`"cmr" = $${index++}`);
-//         values.push(cmr);
-//       }
-//       if (omr !== undefined) {
-//         fields.push(`"omr" = $${index++}`);
-//         values.push(omr);
-//       }
-//       if (res_id !== undefined) {
-//         fields.push(`"res_id" = $${index++}`);
-//         values.push(res_id);
-//       }
-//       if (amount !== undefined) {
-//         fields.push(`"amount" = $${index++}`);
-//         values.push(amount);
-//       }
-//       if (sale !== undefined) {
-//         fields.push(`"sale" = $${index++}`);
-//         values.push(sale);
-//       }
-
-//       // Add default status field
-//       fields.push(`"status" = $${index++}`);
-//       values.push(1);
-
-//       // Ensure there are fields to update
-//       if (fields.length === 0) {
-//         return res.status(400).json({
-//           statusCode: 400,
-//           message: `No fields provided to update for pump_sale_id ${pump_sale_id}.`,
-//         });
-//       }
-
-//       // Add pump_sale_id for WHERE clause
-//       values.push(pump_sale_id);
-
-//       const query = `
-//         UPDATE pump_sales
-//         SET ${fields.join(', ')}
-//         WHERE "pump_sale_id" = $${index}
-//         RETURNING *;
-//       `;
-
-//       const result = await pool.query(query, values);
- 
-//       if (result.rowCount === 0) {
-//         return res.status(404).json({
-//           statusCode: 404,
-//           message: `No pump sales record found with pump_sale_id ${pump_sale_id}.`,
-//         });
-//       }
-//     }
-
-//     res.status(200).json({
-//       statusCode: 200,
-//       message: 'Pump sales updated successfully for all records.',
-//     });
-//   } catch (err) {
-//     console.error('Error updating pump sales:', err);
-//     res.status(500).json({
-//       statusCode: 500,
-//       error: 'Failed to update pump sales. Please try again later.',
-//     });
-//   }
-// };
-
-
 
 
 exports.addPumpSales = async (req, res) => {
