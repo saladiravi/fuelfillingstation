@@ -227,7 +227,7 @@ exports.getPumpDetailsbydate = async (req, res) => {
             FROM pump_sales ps
             INNER JOIN attendence a ON ps.attendence_id = a.attendence_id
             WHERE 
-              a.date::date = $1::date  
+              a.date::date = $1::date - INTERVAL '1 day' 
               AND a.operatorshift = 'B'
               AND ps.bay_side = $2
               AND ps.fuel_type = $3;

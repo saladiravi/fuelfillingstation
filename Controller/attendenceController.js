@@ -77,6 +77,141 @@ const format = require("pg-format");
 
 
 
+// exports.addattendence = async (req, res) => {
+//   try {
+//     const {
+//       date,
+//       operator_name,
+//       from_time,
+//       to_time,
+//       operatorshift,
+//       pumpNumber,
+//       bay_side,  
+//       attendence,
+//       remarks,
+//     } = req.body;
+
+  
+//     if (operatorshift.toLowerCase() === "air" || operatorshift.toLowerCase() === "general" || operatorshift.toLowerCase() === "abscent") {
+//       if (bay_side && bay_side.length > 0) {
+//         return res.status(400).json({
+//           statusCode: 400,
+//           error: `Employees in shift ${operatorshift} cannot have pump sales records.`
+//         });
+//       }
+//     }
+
+//     // ✅ Loop through bay_side only if it is provided and not empty
+//     if (bay_side && Array.isArray(bay_side) && bay_side.length > 0) {
+//       for (const bay of bay_side) {
+//         const { bay_name } = bay;
+
+//         const bayCheck = await pool.query(
+//           `SELECT COUNT(*) FROM pump_sales ps
+//            JOIN attendence atd ON ps.attendence_id = atd.attendence_id
+//            WHERE atd."date" = $1 
+//            AND atd."operatorshift" = $2 
+//            AND atd."pumpNumber" = $3 
+//            AND atd."operator_name" = $4`,  
+//           [date, operatorshift, pumpNumber, operator_name]
+//         );
+
+       
+//         if (parseInt(bayCheck.rows[0].count) > 0) {
+//           return res.status(400).json({
+//             statusCode: 400,
+//             error: `Operator ${operator_name} is already assigned to another bay of pump ${pumpNumber} in shift ${operatorshift} on ${date}.`,
+//           });
+//         }
+
+//         const bayOperatorCheck = await pool.query(
+//           `SELECT COUNT(*) FROM pump_sales ps
+//            JOIN attendence atd ON ps.attendence_id = atd.attendence_id
+//            WHERE atd."date" = $1 
+//            AND atd."operatorshift" = $2 
+//            AND atd."pumpNumber" = $3 
+//            AND ps."bay_side" = $4 
+//            AND atd."operator_name" <> $5`,   
+//           [date, operatorshift, pumpNumber, bay_name, operator_name]
+//         );
+
+//         if (parseInt(bayOperatorCheck.rows[0].count) > 0) {
+//           return res.status(400).json({
+//             statusCode: 400,
+//             error: `Bay ${bay_name} of pump ${pumpNumber} is already assigned to another operator in shift ${operatorshift} on ${date}.`,
+//           });
+//         }
+//       }
+//     }
+
+//     // ✅ Insert attendance record
+//     const attend = await pool.query(
+//       `INSERT INTO attendence(
+//           "date", "from_time","to_time","operator_name", "operatorshift", "pumpNumber",
+//           "attendence", "remarks"
+//       ) VALUES($1, $2, $3, $4, $5, $6,$7,$8) RETURNING *`,
+//       [date, from_time, to_time, operator_name, operatorshift, pumpNumber, attendence, remarks]
+//     );
+
+//     const attendenceId = attend.rows[0]?.attendence_id;
+
+//     // ✅ If shift is A or B, insert pump sales data
+//     if (["MID-A", "A", "MID-B", "B"].includes(operatorshift.toUpperCase()) && bay_side && Array.isArray(bay_side) && bay_side.length > 0) {
+//       const defaultPumpSales = [];
+
+//       for (const bay of bay_side) {
+//         const { bay_name, guns } = bay;
+//         for (const gunInfo of guns || []) {
+//           const { fuel_type } = gunInfo;
+//           defaultPumpSales.push([
+//             attendenceId,
+//             bay_name,
+//             fuel_type,
+//             null,
+//             null,
+//             null,
+//             null,
+//             date,
+//           ]);
+//         }
+//       }
+
+//       if (defaultPumpSales.length > 0) {
+//         const format = require("pg-format");
+//         const pumpSalesQuery = format(
+//           `INSERT INTO pump_sales(
+//             attendence_id, bay_side, fuel_type, cmr, omr, res_id, amount, created_at
+//           ) VALUES %L RETURNING *`,
+//           defaultPumpSales
+//         );
+
+//         const pumpSalesResult = await pool.query(pumpSalesQuery);
+
+//         return res.status(200).json({
+//           statusCode: 200,
+//           message: "Attendance and pump sales recorded successfully.",
+//           attendance: attend.rows[0],
+//           pumpSales: pumpSalesResult.rows,
+//         });
+//       }
+//     }
+
+//     return res.status(200).json({
+//       statusCode: 200,
+//       message: "Attendance recorded successfully.",
+//       attendance: attend.rows[0],
+//     });
+
+//   } catch (err) {
+//     console.error("Database Error:", err);
+//     res.status(500).json({
+//       statusCode: 500,
+//       error: err.message || "Failed to insert attendance",
+//     });
+//   }
+// };
+
+ 
 exports.addattendence = async (req, res) => {
   try {
     const {
@@ -115,33 +250,7 @@ exports.addattendence = async (req, res) => {
            AND atd."operator_name" = $4`,  
           [date, operatorshift, pumpNumber, operator_name]
         );
-
-       
-        if (parseInt(bayCheck.rows[0].count) > 0) {
-          return res.status(400).json({
-            statusCode: 400,
-            error: `Operator ${operator_name} is already assigned to another bay of pump ${pumpNumber} in shift ${operatorshift} on ${date}.`,
-          });
-        }
-
-        const bayOperatorCheck = await pool.query(
-          `SELECT COUNT(*) FROM pump_sales ps
-           JOIN attendence atd ON ps.attendence_id = atd.attendence_id
-           WHERE atd."date" = $1 
-           AND atd."operatorshift" = $2 
-           AND atd."pumpNumber" = $3 
-           AND ps."bay_side" = $4 
-           AND atd."operator_name" <> $5`,   
-          [date, operatorshift, pumpNumber, bay_name, operator_name]
-        );
-
-        if (parseInt(bayOperatorCheck.rows[0].count) > 0) {
-          return res.status(400).json({
-            statusCode: 400,
-            error: `Bay ${bay_name} of pump ${pumpNumber} is already assigned to another operator in shift ${operatorshift} on ${date}.`,
-          });
-        }
-      }
+ }
     }
 
     // ✅ Insert attendance record
@@ -211,7 +320,7 @@ exports.addattendence = async (req, res) => {
   }
 };
 
- 
+
 exports.getAttendenceDetails = async (req, res) => {
   try {
     const query = `
