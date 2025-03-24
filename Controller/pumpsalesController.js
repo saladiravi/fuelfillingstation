@@ -658,6 +658,7 @@ exports.getPumpSalesanydate = async (req, res) => {
           upi: sale.upi,
           pos: sale.pos,
           alp: sale.alp,
+          short_amount:sale.short_amount,
           plus_amount:sale.plus_amount,
           company_account: sale.company_account,
           salesDetails: [],
