@@ -31,7 +31,7 @@ FROM
   attendence a
 INNER JOIN employees e 
   ON a.operator_name = e.employee_id  -- ✅ Both are INTEGER now
-INNER JOIN pump_sales p
+LEFT JOIN pump_sales p
   ON a.attendence_id = p.attendence_id
 WHERE a.date BETWEEN $1 AND $2
 AND ($3::INTEGER IS NULL OR e.employee_id = $3::INTEGER)  -- ✅ Explicitly cast parameter
