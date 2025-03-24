@@ -185,9 +185,8 @@ exports.getPumpDetailsbydate = async (req, res) => {
     const checkResult = await pool.query(checkQuery, [date, operatorName]);
 
     if (checkResult.rows.length > 0) {
-      return res.status(200).json({
-        message: 'Data already added for the selected date, operator, and shift.',
-        data: checkResult.rows
+      return res.status(409).json({
+        message: 'Data already added for the selected date, operator, and shift.'
       });
     }
 
@@ -445,7 +444,7 @@ exports.addPumpSales = async (req, res) => {
         const updateQueries = pumpSales.map(({ pump_sale_id, cmr, omr, res_id, amount, sale, fuel_type, guns}) => ({
           query: `
             UPDATE pump_sales
-            SET cmr = $1, omr = $2, amount = $3, sale = $4, fuel_type = $5, guns = $6, res_id = $7
+            SET cmr = $1, omr = $2, amount = $3, sale = $4, fuel_type = $5, guns = $6, res_id = $7,status = 1
             WHERE pump_sale_id = $8 
           `,
           values: [cmr || 0, omr || 0, amount || 0, sale || 0, fuel_type || '', guns || '', res_id || '',pump_sale_id]
@@ -505,8 +504,7 @@ exports.addPumpSales = async (req, res) => {
           paid_datetime ? new Date(paid_datetime) : null // Ensure valid timestamp
         ]);
       
-        console.log("Executing Query:", creditQuery);
-        console.log("Query Values:", JSON.stringify(creditValues, null, 2));
+        
       
         await client.query(creditQuery, creditValues);
       }
