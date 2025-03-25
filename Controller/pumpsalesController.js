@@ -358,14 +358,15 @@ exports.addPumpSales = async (req, res) => {
       cash_notes,
       cash_notes_advance,
       credit_data,
-      
       cash_amount,
       upi,
       pos,
       alp,
       company_account,
       short_amount,
-      plus_amount
+      plus_amount,
+      pos_batch_no,
+      pos_tad_no
     } = req.body;
 
     if (!attendence_id) {
@@ -393,11 +394,12 @@ exports.addPumpSales = async (req, res) => {
           pump_sale_500, pump_sale_200, pump_sale_100, pump_sale_50, 
           pump_sale_20, pump_sale_10, pump_sale_5, pump_sale_2, pump_sale_1,
            advance_500, advance_200, advance_100, advance_50, 
-          advance_20, advance_10, advance_5, advance_2, advance_1,cash_amount,upi,pos,alp,company_account,short_amount,plus_amount
+          advance_20, advance_10, advance_5, advance_2, advance_1,cash_amount,upi,pos,alp,company_account,short_amount,plus_amount,
+          pos_batch_no,pos_tad_no
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7,
           $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
-          $18, $19, $20, $21, $22, $23, $24, $25,$26,$27,$28,$29,$30,$31,$32
+          $18, $19, $20, $21, $22, $23, $24, $25,$26,$27,$28,$29,$30,$31,$32,$33,$34
         ) RETURNING pumpsale_shift_id;
       `;
 
@@ -433,7 +435,9 @@ exports.addPumpSales = async (req, res) => {
         alp || "0",
         company_account ||  "0",
         short_amount || "0",
-        plus_amount || "0"
+        plus_amount || "0",
+         pos_batch_no || "0",
+        pos_tad_no || "0"
       ];
 
       const shiftResult = await client.query(shiftQuery, shiftValues);
@@ -587,7 +591,7 @@ exports.getPumpSalesanydate = async (req, res) => {
         p.pump_sale_20, p.pump_sale_10, p.pump_sale_5, p.pump_sale_2, p.pump_sale_1, 
         p.advance_amount, p.advance_500, p.advance_200, p.advance_100, p.advance_50, 
         p.advance_20, p.advance_10, p.advance_5, p.advance_2, p.advance_1, 
-        p.cash_amount, p.upi, p.pos, p.alp, p.company_account, p.short_amount,p.plus_amount
+        p.cash_amount, p.upi, p.pos, p.alp, p.company_account, p.short_amount,p.plus_amount,p.pos_batch_no,p.pos_tad_no
       FROM pump_sales ps
       JOIN attendence a ON ps.attendence_id = a.attendence_id
       JOIN employees e ON a.operator_name = e.employee_id
@@ -660,6 +664,8 @@ exports.getPumpSalesanydate = async (req, res) => {
           alp: sale.alp,
           short_amount:sale.short_amount,
           plus_amount:sale.plus_amount,
+          pos_batch_no:sale.pos_batch_no,
+          pos_tad_no:sale.pos_tad_no,
           company_account: sale.company_account,
           salesDetails: [],
           creditdata: [],

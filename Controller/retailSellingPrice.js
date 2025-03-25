@@ -24,7 +24,7 @@ exports.addsellingprice = async (req, res) => {
             `INSERT INTO retailsellingprice("ms", "hsd", "speed","cng","created_at") 
              VALUES ($1, $2, $3, $4,$5) 
              RETURNING *`,
-            [ ms, hsd, cng,speed,created_at]
+            [ ms, hsd, speed,cng,created_at]
         );
 
         res.status(200).json({
