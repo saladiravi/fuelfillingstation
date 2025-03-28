@@ -366,7 +366,12 @@ exports.addPumpSales = async (req, res) => {
       short_amount,
       plus_amount,
       pos_batch_no,
-      pos_tad_no
+      pos_tid_no,
+      alp_batch_no,
+      speed_sale,
+      hsd_sale,
+      ms_sale,
+      sale_commission
     } = req.body;
 
     if (!attendence_id) {
@@ -395,11 +400,11 @@ exports.addPumpSales = async (req, res) => {
           pump_sale_20, pump_sale_10, pump_sale_5, pump_sale_2, pump_sale_1,
            advance_500, advance_200, advance_100, advance_50, 
           advance_20, advance_10, advance_5, advance_2, advance_1,cash_amount,upi,pos,alp,company_account,short_amount,plus_amount,
-          pos_batch_no,pos_tad_no
+          pos_batch_no,pos_tid_no,alp_batch_no,speed_sale,hsd_sale,ms_sale,sale_commission
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7,
           $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
-          $18, $19, $20, $21, $22, $23, $24, $25,$26,$27,$28,$29,$30,$31,$32,$33,$34
+          $18, $19, $20, $21, $22, $23, $24, $25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39
         ) RETURNING pumpsale_shift_id;
       `;
 
@@ -436,8 +441,13 @@ exports.addPumpSales = async (req, res) => {
         company_account ||  "0",
         short_amount || "0",
         plus_amount || "0",
-         pos_batch_no || "0",
-        pos_tad_no || "0"
+        pos_batch_no || "0",
+        pos_tid_no || "0",
+        alp_batch_no ||"0",
+        speed_sale || "0",
+        hsd_sale || "0",
+        ms_sale || "0",
+        sale_commission || "0"
       ];
 
       const shiftResult = await client.query(shiftQuery, shiftValues);
@@ -591,7 +601,8 @@ exports.getPumpSalesanydate = async (req, res) => {
         p.pump_sale_20, p.pump_sale_10, p.pump_sale_5, p.pump_sale_2, p.pump_sale_1, 
         p.advance_amount, p.advance_500, p.advance_200, p.advance_100, p.advance_50, 
         p.advance_20, p.advance_10, p.advance_5, p.advance_2, p.advance_1, 
-        p.cash_amount, p.upi, p.pos, p.alp, p.company_account, p.short_amount,p.plus_amount,p.pos_batch_no,p.pos_tad_no
+        p.cash_amount, p.upi, p.pos, p.alp, p.company_account, p.short_amount,p.plus_amount,p.pos_batch_no,p.pos_tid_no,p.alp_batch_no,p.speed_sale,p.hsd_sale,
+        p.ms_sale,p.sale_commission
       FROM pump_sales ps
       JOIN attendence a ON ps.attendence_id = a.attendence_id
       JOIN employees e ON a.operator_name = e.employee_id
@@ -665,7 +676,12 @@ exports.getPumpSalesanydate = async (req, res) => {
           short_amount:sale.short_amount,
           plus_amount:sale.plus_amount,
           pos_batch_no:sale.pos_batch_no,
-          pos_tad_no:sale.pos_tad_no,
+          pos_tid_no:sale.pos_tid_no,
+          alp_batch_no:sale.alp_batch_no,
+          speed_sale:sale.speed_sale,
+          hsd_sale:sale.hsd_sale,
+          ms_sale:sale.ms_sale,
+          sale_commission:sale.sale_commission,
           company_account: sale.company_account,
           salesDetails: [],
           creditdata: [],
@@ -778,7 +794,8 @@ exports.pumpdetailsforedit = async (req, res) => {
         p.pump_sale_20, p.pump_sale_10, p.pump_sale_5, p.pump_sale_2, p.pump_sale_1, 
         p.advance_amount, p.advance_500, p.advance_200, p.advance_100, p.advance_50, 
         p.advance_20, p.advance_10, p.advance_5, p.advance_2, p.advance_1, 
-        p.cash_amount, p.upi, p.pos, p.alp, p.company_account, p.short_amount,p.plus_amount,p.attendence_id
+        p.cash_amount, p.upi, p.pos, p.alp, p.company_account, p.short_amount,p.plus_amount,p.speed_sale,p.hsd_sale,p.ms_sale,p.sale_commission,
+        p.pos_batch_no,p.pos_tid_no,p.alp_batch_no,p.attendence_id
       FROM pump_sales ps
       JOIN attendence a ON ps.attendence_id = a.attendence_id
       JOIN employees e ON a.operator_name = e.employee_id
@@ -854,6 +871,13 @@ exports.pumpdetailsforedit = async (req, res) => {
           alp: sale.alp,
           short_amount:sale.short_amount,
           plus_amount:sale.plus_amount,
+          speed_sale:sale.speed_sale,
+          hsd_sale:sale.hsd_sale,
+          ms_sale:sale.ms_sale,
+          sale_commission:sale.sale_commission,
+          pos_batch_no:sale.pos_batch_no,
+          pos_tid_no:sale.pos_tid_no,
+          alp_batch_no:sale.alp_batch_no,
           company_account: sale.company_account,
           salesDetails: [],
           creditdata: [],
