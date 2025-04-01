@@ -2,81 +2,8 @@ const pool = require('../db/db');
 const moment = require('moment');
 const format = require("pg-format");
 
-// exports.addattendence = async (req, res) => {
-//   try {
-//     const {
-//       date,
-//       operator_name,
-//       operatorshift,
-//       pumpNumber,
-//       bay_side,
-//       attendence,
-//       remarks,
-//     } = req.body;
-
-//     const attend = await pool.query(
-//       `INSERT INTO attendence(
-//           "date", "operator_name", "operatorshift", "pumpNumber",
-//           "attendence", "remarks"
-//       ) VALUES($1, $2, $3, $4, $5, $6) RETURNING *`,
-//       [date, operator_name, operatorshift, pumpNumber, attendence, remarks]
-//     );
-
-    
-
-//     const attendenceId = attend.rows[0]?.attendence_id;
-//     if (!attendenceId) {
-//       throw new Error("Failed to insert attendance.");
-//     }
-
-//     const defaultPumpSales = [];
-//     for (const bay of bay_side || []) {
-//       const { bay_name, guns } = bay;
-//       for (const gunInfo of guns || []) {
-//         const { gun, fuel_type } = gunInfo;
-//         defaultPumpSales.push([
-//           attendenceId,
-//           bay_name,
-//           gun,
-//           fuel_type,
-//           null,
-//           null,
-//           null,
-//           null,
-//           new Date(),
-//         ]);
-//       }
-//     }
-
-
-//     if (defaultPumpSales.length === 0) {
-//       return res.status(400).json({ error: "No pump sales data to insert." });
-//     }
-
-//     const pumpSalesQuery = `
-//     INSERT INTO pump_sales(
-//       attendence_id, bay_side, 
-//       guns, fuel_type, cmr, omr, res_id, amount, created_at
-//     ) VALUES %L RETURNING *`;
-//     const formattedQuery = format(pumpSalesQuery, defaultPumpSales);
-
-     
-
-//     const pumpSalesResult = await pool.query(formattedQuery);
-    
-//     res.json({
-//       statusCode: 200,
-//       attendance: attend.rows[0],
-//       pumpSales: pumpSalesResult.rows,
-//     });
-//   } catch (err) {
-//     // console.error(err); // Log the error details for debugging
-//     res.status(500).json({ error: err.message || "Failed to insert attendance and pump sales" });
-//   }
-// };
-
-
-
+ 
+ 
 // exports.addattendence = async (req, res) => {
 //   try {
 //     const {
@@ -115,33 +42,7 @@ const format = require("pg-format");
 //            AND atd."operator_name" = $4`,  
 //           [date, operatorshift, pumpNumber, operator_name]
 //         );
-
-       
-//         if (parseInt(bayCheck.rows[0].count) > 0) {
-//           return res.status(400).json({
-//             statusCode: 400,
-//             error: `Operator ${operator_name} is already assigned to another bay of pump ${pumpNumber} in shift ${operatorshift} on ${date}.`,
-//           });
-//         }
-
-//         const bayOperatorCheck = await pool.query(
-//           `SELECT COUNT(*) FROM pump_sales ps
-//            JOIN attendence atd ON ps.attendence_id = atd.attendence_id
-//            WHERE atd."date" = $1 
-//            AND atd."operatorshift" = $2 
-//            AND atd."pumpNumber" = $3 
-//            AND ps."bay_side" = $4 
-//            AND atd."operator_name" <> $5`,   
-//           [date, operatorshift, pumpNumber, bay_name, operator_name]
-//         );
-
-//         if (parseInt(bayOperatorCheck.rows[0].count) > 0) {
-//           return res.status(400).json({
-//             statusCode: 400,
-//             error: `Bay ${bay_name} of pump ${pumpNumber} is already assigned to another operator in shift ${operatorshift} on ${date}.`,
-//           });
-//         }
-//       }
+//  }
 //     }
 
 //     // ✅ Insert attendance record
@@ -211,7 +112,7 @@ const format = require("pg-format");
 //   }
 // };
 
- 
+
 exports.addattendence = async (req, res) => {
   try {
     const {
@@ -246,10 +147,16 @@ exports.addattendence = async (req, res) => {
            JOIN attendence atd ON ps.attendence_id = atd.attendence_id
            WHERE atd."date" = $1 
            AND atd."operatorshift" = $2 
-           AND atd."pumpNumber" = $3 
-           AND atd."operator_name" = $4`,  
-          [date, operatorshift, pumpNumber, operator_name]
+           AND atd."pumpNumber" = $3 `,  
+          [date, operatorshift, pumpNumber ]
         );
+
+        if (bayCheck.rows[0].count > 0) {
+                return res.status(400).json({
+                  statusCode: 400,
+                  error: `Pump ${pumpNumber} is already assigned to another operator in shift ${operatorshift} on ${date}.`,
+                });
+              }
  }
     }
 
@@ -319,7 +226,6 @@ exports.addattendence = async (req, res) => {
     });
   }
 };
-
 
 exports.getAttendenceDetails = async (req, res) => {
   try {
